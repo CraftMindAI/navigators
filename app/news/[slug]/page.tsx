@@ -60,10 +60,10 @@ export default function BlogPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-navyDark via-[#1a1a4e] to-[#2d1b4e] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-midnight text-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm font-semibold">Loading Blog...</p>
+          <div className="w-10 h-10 border-2 border-primaryCyan border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-slate-400">Loading Article...</p>
         </div>
       </div>
     );
@@ -71,54 +71,86 @@ export default function BlogPostPage() {
 
   if (!blog) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-navyDark via-[#1a1a4e] to-[#2d1b4e] py-20 px-4 text-center">
-        <h2 className="text-2xl font-bold text-white mb-4">Blog Post Not Found</h2>
-        <p className="text-slate-400 mb-6">The requested article could not be found.</p>
-        <Link href="/news" className="bg-primaryCyan text-navyDark px-6 py-3 rounded-xl font-bold text-sm">
-          Return to Blogs
-        </Link>
+      <div className="min-h-screen bg-midnight py-24 px-4 text-center text-white">
+        <div className="max-w-md mx-auto glass-panel p-8 rounded-3xl">
+          <h2 className="text-2xl font-bold mb-3">Article Not Found</h2>
+          <p className="text-slate-400 text-xs mb-6 font-light">The requested travel guide could not be located.</p>
+          <Link
+            href="/news"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primaryCyan text-white font-bold text-xs shadow-glow"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Return to Travel Journal</span>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-navyDark to-navyBlue text-white relative">
-      {/* Decorative Glow */}
-      <div className="absolute top-[40vh] left-0 w-[500px] h-[500px] bg-primaryCyan/5 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Hero Header */}
-      <div className="relative w-full h-[40vh] md:h-[50vh] bg-gradient-to-b from-navyDark via-[#1a1a4e] to-[#2d1b4e]">
+    <div className="min-h-screen bg-midnight text-white pb-20">
+      {/* Editorial Hero Header */}
+      <div className="relative w-full h-[50vh] sm:h-[60vh] overflow-hidden flex flex-col justify-end">
         <img 
           src={blog.image_url} 
           alt={blog.title} 
-          className="absolute inset-0 w-full h-full object-cover opacity-50"
+          className="absolute inset-0 w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-navyDark via-navyDark/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/70 to-midnight/20" />
         
-        <div className="absolute inset-0 flex flex-col justify-end max-w-4xl mx-auto px-4 pb-12 z-10">
-          <Link href="/news" className="inline-flex items-center gap-1.5 text-xs text-primaryCyan hover:text-white mb-6 font-bold transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Back to Blogs
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-12 w-full">
+          <Link
+            href="/news"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-primaryCyan mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Journal</span>
           </Link>
           
-          <h1 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4">
+          <h1 className="editorial-heading text-3xl sm:text-4xl lg:text-6xl font-bold text-white leading-tight mb-4">
             {blog.title}
           </h1>
           
-          <div className="flex flex-wrap items-center gap-6 text-sm text-slate-300 font-semibold">
-            <span className="flex items-center gap-2"><Calendar className="w-4 h-4 text-primaryCyan" /> {blog.created_at ? new Date(blog.created_at).toLocaleDateString() : 'Recently'}</span>
-            <span className="flex items-center gap-2"><User className="w-4 h-4 text-primaryCyan" /> By {blog.author}</span>
+          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300">
+            <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
+              <Calendar className="w-3.5 h-3.5 text-gold" />
+              <span>{blog.created_at ? new Date(blog.created_at).toLocaleDateString() : 'Recently'}</span>
+            </span>
+            <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
+              <User className="w-3.5 h-3.5 text-primaryCyan" />
+              <span>By {blog.author}</span>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Blog Content */}
-      <div className="max-w-4xl mx-auto px-4 py-12 md:py-16 relative z-10">
-        <div className="prose prose-lg prose-invert max-w-none text-slate-300">
-          {blog.content.split('\n').map((paragraph, idx) => (
-            <p key={idx} className="mb-4 leading-relaxed">
-              {paragraph}
-            </p>
-          ))}
+      {/* Editorial Article Body */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 relative z-10">
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-white/[0.08] shadow-card">
+          <div className="prose prose-lg prose-invert max-w-none text-slate-200 font-light leading-relaxed space-y-6">
+            {blog.content.split('\n').filter(p => p.trim() !== '').map((paragraph, idx) => (
+              <p key={idx} className="text-sm sm:text-base text-slate-300 leading-relaxed">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+
+          <div className="mt-12 pt-8 border-t border-white/[0.08] flex items-center justify-between">
+            <Link
+              href="/news"
+              className="text-xs font-semibold text-primaryCyan hover:underline flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>More Articles in Journal</span>
+            </Link>
+
+            <Link
+              href="/#packages"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primaryCyan to-blue-600 text-white font-bold text-xs shadow-glow"
+            >
+              Explore Packages
+            </Link>
+          </div>
         </div>
       </div>
     </div>

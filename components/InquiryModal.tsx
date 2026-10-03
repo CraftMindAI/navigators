@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, ShieldCheck } from 'lucide-react';
+import {
+  X,
+  Check,
+  ShieldCheck,
+  Sparkles,
+  Phone,
+  Calendar,
+  Users,
+  Compass,
+  MapPin,
+  Clock,
+  ArrowRight
+} from 'lucide-react';
 import { TourPackage, Inquiry } from '@/types';
 import { submitInquiry } from '@/lib/supabase';
+import { siteConfig } from '@/config/siteConfig';
 
 interface InquiryModalProps {
   tour?: TourPackage | null;
@@ -21,8 +34,8 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
     message: '',
   });
 
-  const [nights, setNights] = useState('');
-  const [destination, setDestination] = useState(tour?.title || '');
+  const [nights, setNights] = useState('4 Nights / 5 Days');
+  const [destination, setDestination] = useState(tour?.title || 'Sikkim & Gangtok');
   const [captchaChecked, setCaptchaChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -38,7 +51,7 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!captchaChecked) {
-      alert('Please confirm you are not a robot by clicking the reCAPTCHA box.');
+      alert('Please check the verification box to proceed.');
       return;
     }
     setLoading(true);
@@ -46,8 +59,8 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
     const payload: Inquiry = {
       ...formData,
       tourId: tour?.id,
-      tourTitle: destination || 'General Travel Consultation',
-      message: nights ? `${nights} nights. ${formData.message}` : formData.message
+      tourTitle: destination || 'Bespoke Travel Consultation',
+      message: nights ? `Duration: ${nights}. ${formData.message}` : formData.message,
     };
 
     try {
@@ -59,190 +72,208 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
         setCaptchaChecked(false);
       }, 3000);
     } catch (err: any) {
-      alert('Failed to submit inquiry. Please try again.');
+      alert('Failed to submit inquiry. Please try again or call us directly.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 sm:p-6 animate-in fade-in duration-300">
-      <div className="bg-navyDark/95 backdrop-blur-md text-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden relative flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-300 border border-slate-700/50">
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-300">
+      <div className="bg-midnight/95 backdrop-blur-2xl text-slate-200 w-full max-w-3xl rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden relative flex flex-col md:flex-row max-h-[92vh] border border-white/[0.12] animate-in zoom-in-95 duration-300">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition-all shadow-md"
-          title="Close"
+          className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-slate-200 flex items-center justify-center transition-all duration-200"
+          title="Close modal"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Top Banner Image */}
-        <div className="relative h-20 sm:h-28 md:h-36 overflow-hidden bg-navyDark flex-shrink-0">
+        {/* Left Column: Visual & Trust Pillars */}
+        <div className="relative md:w-5/12 bg-midnightLight p-6 sm:p-8 flex flex-col justify-between overflow-hidden border-b md:border-b-0 md:border-r border-white/[0.08]">
+          {/* Subtle background image of destination */}
           <img
-            src={tour?.imageUrl || "https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1200&q=80"}
-            alt="Travelers Banner"
-            className="w-full h-full object-cover object-center"
+            src={tour?.imageUrl || 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1000&q=80'}
+            alt="Escape Preview"
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-30 pointer-events-none"
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-midnightLight via-midnightLight/80 to-midnightLight/60 pointer-events-none" />
+
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primaryCyan/20 text-primaryCyan text-[10px] font-bold uppercase tracking-wider mb-4 border border-primaryCyan/30">
+              <Sparkles className="w-3 h-3 text-gold" />
+              <span>Bespoke Holiday Concierge</span>
+            </div>
+
+            <h3 className="editorial-heading text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight">
+              Craft Your Dream Itinerary
+            </h3>
+
+            <p className="text-xs text-slate-300 font-light leading-relaxed mb-6">
+              Connect directly with our dedicated travel coordinators for exclusive rates, customized hotel upgrades, and tailored itineraries.
+            </p>
+
+            {tour && (
+              <div className="p-3.5 rounded-2xl bg-midnight/80 border border-white/[0.1] backdrop-blur-md mb-6">
+                <span className="text-[10px] uppercase font-bold text-gold tracking-widest block mb-1">
+                  Selected Package
+                </span>
+                <h4 className="text-xs font-bold text-white line-clamp-1">{tour.title}</h4>
+                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300">
+                  <span className="text-primaryCyan font-semibold">₹{tour.price.toLocaleString('en-IN')}</span>
+                  <span>•</span>
+                  <span>{tour.durationNights}N / {tour.durationDays}D</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative z-10 space-y-2 pt-4 border-t border-white/[0.08] text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>100% Free Custom Quotation</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-gold" />
+              <span>Guaranteed 15-Minute Response</span>
+            </div>
+          </div>
         </div>
 
-        {/* Form Content - Scrollable */}
-        <div className="overflow-y-auto custom-scrollbar p-4 sm:p-6">
+        {/* Right Column: Form */}
+        <div className="md:w-7/12 p-6 sm:p-8 overflow-y-auto custom-scrollbar flex flex-col justify-center">
           {submitted ? (
-            <div className="text-center py-6 sm:py-8 space-y-3">
-              <div className="w-14 h-14 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
+            <div className="text-center py-10 space-y-3">
+              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
                 <Check className="w-8 h-8" />
               </div>
-              <h4 className="text-xl font-extrabold text-white">Details Sent Successfully!</h4>
-              <p className="text-xs text-slate-400">
-                Our travel representative will contact you within 10 minutes with custom quotes & itineraries.
+              <h4 className="text-2xl font-bold text-white">Inquiry Received</h4>
+              <p className="text-xs text-slate-300 max-w-xs mx-auto font-light leading-relaxed">
+                Thank you! Our destination specialist is preparing your customized quotation and will reach out promptly.
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-              {/* Row 1: Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Name"
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
-                />
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="Email Id"
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
-                />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <h4 className="text-lg font-bold text-white mb-1">Traveler Details</h4>
+                <p className="text-xs text-slate-400 mb-4 font-light">Tell us who is traveling and when.</p>
               </div>
 
-              {/* Row 2: Contact Number & No. of People */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="Contact Number"
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
-                />
-                <div className="relative">
+              {/* Name & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Your Full Name *</label>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
                     required
-                    value={formData.guestsCount || ''}
-                    onChange={(e) => setFormData({ ...formData, guestsCount: parseInt(e.target.value) || 1 })}
-                    placeholder="No. of People"
-                    className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g. Ananya Roy"
+                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
                   />
-                  {!formData.guestsCount && (
-                    <span className="absolute left-3 sm:left-4 top-2.5 sm:top-3 text-sm text-slate-500 pointer-events-none">
-                      No. of People
-                    </span>
-                  )}
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Phone / WhatsApp *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="+91 9876543210"
+                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                  />
                 </div>
               </div>
 
-              {/* Row 3: Select no. of nights & Date of Arrival */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <select
-                  required
-                  value={nights}
-                  onChange={(e) => setNights(e.target.value)}
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 focus:outline-none focus:border-primaryCyan"
-                >
-                  <option value="">Select no. of nights</option>
-                  <option value="2 Nights / 3 Days">2 Nights / 3 Days</option>
-                  <option value="3 Nights / 4 Days">3 Nights / 4 Days</option>
-                  <option value="4 Nights / 5 Days">4 Nights / 5 Days</option>
-                  <option value="5 Nights / 6 Days">5 Nights / 6 Days</option>
-                  <option value="6+ Nights">6+ Nights</option>
-                </select>
+              {/* Email & Guests */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="name@example.com"
+                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Travelers</label>
+                  <select
+                    value={formData.guestsCount}
+                    onChange={(e) => setFormData({ ...formData, guestsCount: parseInt(e.target.value) || 2 })}
+                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan transition-colors"
+                  >
+                    <option value={1}>Solo Traveler (1 Person)</option>
+                    <option value={2}>Couple / 2 Persons</option>
+                    <option value={4}>Small Family (3-4 Persons)</option>
+                    <option value={6}>Group / Family (5+ Persons)</option>
+                  </select>
+                </div>
+              </div>
 
-                <div className="relative">
+              {/* Destination & Travel Date */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Destination</label>
+                  <input
+                    type="text"
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    placeholder="e.g. Sikkim, Kashmir, Bali"
+                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Expected Date</label>
                   <input
                     type="date"
-                    required
                     value={formData.travelDate}
                     onChange={(e) => setFormData({ ...formData, travelDate: e.target.value })}
-                    className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan transition-colors"
                   />
-                  {!formData.travelDate && (
-                    <span className="absolute left-3 sm:left-4 top-2.5 sm:top-3 text-sm text-slate-500 pointer-events-none">
-                      {/* Date of Arrival */}
-                    </span>
-                  )}
                 </div>
               </div>
 
-              {/* Row 4: Select Your Destination */}
-              <div>
-                <select
-                  required
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 text-sm text-slate-200 focus:outline-none focus:border-primaryCyan"
-                >
-                  <option value="">Select Your Destination</option>
-                  {tour && <option value={tour.title}>{tour.title}</option>}
-                  <option value="Sikkim & Gangtok">Sikkim & Gangtok</option>
-                  <option value="Kashmir">Kashmir</option>
-                  <option value="Darjeeling">Darjeeling</option>
-                  <option value="Kerala">Kerala</option>
-                  <option value="Andaman Islands">Andaman Islands</option>
-                  <option value="Bhutan">Bhutan</option>
-                  <option value="Bali">Bali</option>
-                  <option value="Shimla & Manali">Shimla & Manali</option>
-                  <option value="Leh Ladakh">Leh Ladakh</option>
-                  <option value="Goa">Goa</option>
-                  <option value="Uttarakhand">Uttarakhand</option>
-                </select>
+              {/* Human verification check */}
+              <div className="pt-1">
+                <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl bg-midnight border border-white/[0.08] hover:border-white/[0.15] transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={captchaChecked}
+                    onChange={(e) => setCaptchaChecked(e.target.checked)}
+                    className="w-4 h-4 rounded text-primaryCyan border-white/[0.2] bg-midnight focus:ring-primaryCyan cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-300 font-medium">
+                    I am requesting custom itinerary pricing from The Navigators
+                  </span>
+                </label>
               </div>
 
-              {/* Row 5: reCAPTCHA Widget Simulation */}
-              <div className="flex justify-center sm:justify-start my-2 sm:my-3">
-                <div className="w-full max-w-[280px] p-2 bg-slate-800/80 border border-slate-600 rounded flex items-center justify-between shadow-sm">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={captchaChecked}
-                      onChange={(e) => setCaptchaChecked(e.target.checked)}
-                      className="w-5 h-5 rounded-sm text-primaryCyan border-slate-400 focus:ring-primaryCyan cursor-pointer"
-                    />
-                    <span className="text-xs font-medium text-slate-300">I'm not a robot</span>
-                  </label>
+              {/* Submit CTA */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-primaryCyan to-blue-600 hover:from-blue-500 hover:to-primaryCyan text-white font-bold text-xs uppercase tracking-wider shadow-glow hover:shadow-cyanGlow transition-all duration-300 flex items-center justify-center gap-2 mt-2"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span>REQUEST TAILORED QUOTE</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
 
-                  <div className="flex flex-col items-center">
-                    <ShieldCheck className="w-5 h-5 text-primaryCyan" />
-                    <span className="text-[9px] text-slate-400 font-semibold uppercase">reCAPTCHA</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button */}
-              <div className="text-center pt-1 sm:pt-2 pb-2 sm:pb-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-primaryCyan hover:brightness-110 text-white px-8 sm:px-10 py-2.5 sm:py-3 rounded-lg text-sm font-semibold transition-colors inline-flex items-center justify-center gap-2 shadow-lg w-full sm:w-auto min-w-[180px] sm:min-w-[200px] touch-manipulation"
+              <div className="text-center pt-2">
+                <a
+                  href={siteConfig.phoneCallUrl}
+                  className="text-[11px] text-slate-400 hover:text-primaryCyan transition-colors"
                 >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <span>Submit </span>
-                  )}
-                </button>
+                  Need instant answers? Speak with concierge at <span className="font-bold text-white">{siteConfig.phoneNumber}</span>
+                </a>
               </div>
             </form>
           )}

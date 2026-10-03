@@ -1,9 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Cinzel', serif;
 }
 
 * {
@@ -17,39 +20,93 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: linear-gradient(180deg, #0d0d2b 0%, #1a1a4e 40%, #2d1b4e 70%, #4a1a3a 100%);
+  background: radial-gradient(ellipse at 50% -10%, #11223b 0%, #070e18 55%, #03070d 100%);
   background-attachment: fixed;
   color: #e2e8f0;
   overflow-x: hidden;
   min-height: 100dvh;
 }
 
-/* Hide the page's vertical scrollbar (scrolling still works) */
+::selection {
+  background: rgba(0, 168, 232, 0.3);
+  color: #ffffff;
+}
+
+/* Hide vertical scrollbar while allowing scroll */
 html {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* old Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Edge */
+  display: none;
 }
 
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
+/* Custom Horizontal and Inner Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
 }
-::-webkit-scrollbar-track {
-  background: #000c1a;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(6, 13, 23, 0.6);
+  border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e385e;
+  border-radius: 9999px;
 }
-::-webkit-scrollbar-thumb:hover {
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #00a8e8;
 }
 
-/* Responsive utility improvements */
+/* Luxury Glassmorphism & UI Utilities */
+@layer components {
+  .glass-nav {
+    background: rgba(6, 13, 23, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .glass-panel {
+    background: rgba(13, 26, 45, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  }
+
+  .glass-card {
+    background: linear-gradient(135deg, rgba(17, 34, 59, 0.65) 0%, rgba(9, 19, 34, 0.8) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-card:hover {
+    border-color: rgba(0, 168, 232, 0.35);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px -15px rgba(0, 168, 232, 0.15);
+  }
+
+  .gold-gradient-text {
+    background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 50%, #D97706 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .cyan-gradient-text {
+    background: linear-gradient(135deg, #7dd3fc 0%, #00a8e8 50%, #0284c7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .editorial-heading {
+    font-family: var(--font-display);
+    letter-spacing: -0.01em;
+  }
+}
+
 @layer utilities {
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom);
@@ -69,60 +126,28 @@ body::-webkit-scrollbar {
   }
 }
 
-/* Prevent horizontal overflow on all screen sizes */
 @layer base {
   img {
     max-width: 100%;
     height: auto;
   }
-  
-  input,
-  select,
-  textarea {
-    font-size: 16px; /* Prevents iOS zoom on focus */
+  input, select, textarea {
+    font-size: 16px;
   }
 }
 
-/* Animation utilities */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pulse-glow {
+/* Luxury animations */
+@keyframes ambientGlow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 78, 0, 0.3);
+    transform: translate(0, 0) scale(1);
+    opacity: 0.15;
   }
   50% {
-    box-shadow: 0 0 40px rgba(255, 78, 0, 0.6);
+    transform: translate(20px, -20px) scale(1.1);
+    opacity: 0.25;
   }
 }
 
-.animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.6s ease-out forwards;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+.animate-ambient-glow {
+  animation: ambientGlow 12s ease-in-out infinite alternate;
 }

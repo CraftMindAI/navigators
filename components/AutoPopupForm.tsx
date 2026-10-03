@@ -12,7 +12,7 @@ export default function AutoPopupForm() {
     if (!hasClosed) {
       const timer = setTimeout(() => {
         setIsOpen(true);
-      }, 10000); // 10 seconds timer
+      }, 35000); // 35 seconds timer for respectful luxury experience
       return () => clearTimeout(timer);
     }
   }, []);

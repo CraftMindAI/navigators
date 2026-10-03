@@ -7,7 +7,7 @@ import { getTours } from '@/lib/supabase';
 import { TourPackage } from '@/types';
 import TourPackageCard from '@/components/TourPackageCard';
 import InquiryModal from '@/components/InquiryModal';
-import { MapPin, ArrowLeft } from 'lucide-react';
+import { MapPin, ArrowLeft, Sparkles, Compass } from 'lucide-react';
 
 export default function LocationPage() {
   const params = useParams();
@@ -16,12 +16,12 @@ export default function LocationPage() {
   const [tours, setTours] = useState<TourPackage[]>([]);
   const [selectedTour, setSelectedTour] = useState<TourPackage | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       const all = await getTours();
       if (slug) {
-        // filter by location slug
         const filtered = all.filter(
           (t) => t.slug.includes(slug) || slug.includes(t.slug) || t.location.toLowerCase().includes(slug.split('-')[0])
         );
@@ -29,48 +29,67 @@ export default function LocationPage() {
       } else {
         setTours(all);
       }
+      setLoading(false);
     }
     loadData();
   }, [slug]);
 
   const locationTitle = slug
-    ? slug.replace(/-/g, ' ').replace('tour package', '').replace('packages', '').toUpperCase()
+    ? slug.replace(/-/g, ' ').replace('tour package', '').replace('packages', '').trim().toUpperCase()
     : 'ALL DESTINATIONS';
 
   return (
-    <div className="py-12 relative min-h-screen bg-gradient-to-br from-navyDark via-navyBlue to-primaryCyan/20 text-white overflow-hidden">
-      {/* Decorative Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primaryCyan/5 rounded-full blur-[120px] pointer-events-none" />
+    <div className="py-14 sm:py-16 relative min-h-screen bg-midnight text-white overflow-hidden">
+      {/* Ambient background glows */}
+      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primaryCyan/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 left-10 w-[400px] h-[400px] bg-gold/5 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
-        <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-primaryCyan font-bold hover:underline mb-4 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Home
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-primaryCyan mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Home</span>
         </Link>
 
-        <div className="mb-6 sm:mb-8 border-b border-slate-700/50 pb-4 sm:pb-6">
-          <div className="flex items-center gap-2 text-primaryCyan text-[10px] sm:text-xs font-extrabold uppercase tracking-wider mb-1">
-            <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Explore Destination
+        {/* Destination Header */}
+        <div className="mb-10 sm:mb-12 border-b border-white/[0.08] pb-6 sm:pb-8">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-xs font-semibold mb-3">
+            <Compass className="w-3.5 h-3.5 text-primaryCyan" />
+            <span className="gold-gradient-text uppercase font-bold tracking-widest text-[11px]">
+              Destination Expeditions
+            </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white">
+
+          <h1 className="editorial-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight">
             {locationTitle} TOUR PACKAGES
           </h1>
-          <p className="text-slate-300 text-xs sm:text-sm mt-1 sm:mt-2">
-            Browse carefully selected holiday itineraries with transparent pricing and 24/7 on-trip assistance.
+
+          <p className="text-slate-300 text-sm sm:text-base mt-2 font-light max-w-3xl">
+            Browse our masterfully crafted holiday packages for {locationTitle.toLowerCase()} featuring verified boutique stays, private chauffeur transfers, and 24/7 dedicated travel concierge.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {tours.map((t) => (
-            <TourPackageCard
-              key={t.id}
-              tour={t}
-              onEnquire={(tour) => {
-                setSelectedTour(tour);
-                setModalOpen(true);
-              }}
-            />
-          ))}
-        </div>
+        {/* Loading Spinner */}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="w-8 h-8 border-2 border-primaryCyan border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {tours.map((t) => (
+              <TourPackageCard
+                key={t.id}
+                tour={t}
+                onEnquire={(tour) => {
+                  setSelectedTour(tour);
+                  setModalOpen(true);
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <InquiryModal

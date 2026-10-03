@@ -2,7 +2,19 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Send, CheckCircle2, Facebook, Instagram, Plane, Mountain } from 'lucide-react';
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  CheckCircle2,
+  Facebook,
+  Instagram,
+  Sparkles,
+  ShieldCheck,
+  Compass,
+  ArrowRight
+} from 'lucide-react';
 import { subscribeNewsletter } from '@/lib/supabase';
 import { siteConfig } from '@/config/siteConfig';
 
@@ -22,106 +34,123 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-navyDark/90 backdrop-blur-md text-slate-300 pt-12 sm:pt-16 pb-6 sm:pb-8 border-t border-slate-800 relative z-20">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 mb-8 sm:mb-12">
-          {/* Col 1: About */}
+    <footer className="bg-[#03070d] text-slate-300 pt-16 sm:pt-20 pb-8 sm:pb-12 border-t border-white/[0.08] relative z-20 overflow-hidden">
+      {/* Subtle backdrop ambient light */}
+      <div className="absolute top-0 right-1/4 w-[400px] h-[400px] bg-primaryCyan/5 rounded-full blur-[140px] pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 mb-12 sm:mb-16">
+          {/* Col 1: Brand & Identity */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center">
+            <Link href="/" className="inline-block">
               <img
-                src="/logo-dark.svg"
-                alt="The navigators"
-                className="h-10 sm:h-14 w-auto object-contain hover:opacity-90 transition-opacity"
+                src="/Navigator.png"
+                alt="The Navigators"
+                className="h-11 sm:h-12 w-auto object-contain"
               />
             </Link>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
-              The Navigators is a leading tour and travel company dedicated to crafting customized holiday experiences across domestic & international destinations including Sikkim, Kashmir, Darjeeling, Kerala, Andaman, Bhutan, Bali, and beyond.
+            <p className="text-xs text-slate-400 leading-relaxed font-light">
+              The Navigators is a premier travel agency dedicated to orchestrating bespoke holiday expeditions across India and exotic international frontiers. From the peaks of Sikkim to the shores of Andaman & Bali, we redefine journeying.
             </p>
 
-            <div className="flex items-center gap-3 pt-2">
-              <a href={siteConfig.socialLinks.facebook} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-primaryCyan hover:text-navyDark flex items-center justify-center transition-colors">
+            <div className="flex items-center gap-2.5 pt-2">
+              <a
+                href={siteConfig.socialLinks.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white/[0.05] hover:bg-primaryCyan hover:text-white border border-white/[0.08] flex items-center justify-center transition-colors"
+                title="Facebook"
+              >
                 <Facebook className="w-4 h-4" />
               </a>
-              <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-primaryCyan hover:text-navyDark flex items-center justify-center transition-colors">
+              <a
+                href={siteConfig.socialLinks.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="w-9 h-9 rounded-full bg-white/[0.05] hover:bg-primaryCyan hover:text-white border border-white/[0.08] flex items-center justify-center transition-colors"
+                title="Instagram"
+              >
                 <Instagram className="w-4 h-4" />
               </a>
             </div>
           </div>
 
-          {/* Col 2: Need Help / Contact */}
+          {/* Col 2: Need Assistance / Contact */}
           <div className="space-y-3">
-            <h4 className="text-sm font-extrabold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-              Need Assistance?
+            <h4 className="text-xs font-bold text-white uppercase tracking-widest border-b border-white/[0.08] pb-2 flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-primaryCyan" />
+              <span>Travel Concierge</span>
             </h4>
-            <ul className="space-y-2.5 text-xs text-slate-400">
-              <li className="flex items-start gap-2">
+            <ul className="space-y-3 text-xs text-slate-400">
+              <li className="flex items-start gap-2.5">
                 <Phone className="w-4 h-4 text-primaryCyan flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="block font-semibold text-slate-200">Call Us 24/7:</span>
-                  <a href={siteConfig.phoneCallUrl} className="hover:text-primaryCyan transition-colors">
+                  <span className="block font-semibold text-slate-200">24/7 Customer Care:</span>
+                  <a href={siteConfig.phoneCallUrl} className="hover:text-primaryCyan transition-colors font-medium text-slate-300">
                     {siteConfig.phoneNumber}
                   </a>
                 </div>
               </li>
-              <li className="flex items-start gap-2">
+              <li className="flex items-start gap-2.5">
                 <Mail className="w-4 h-4 text-primaryCyan flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="block font-semibold text-slate-200">Email Us:</span>
-                  <a href={`mailto:${siteConfig.emailAddress}`} className="hover:text-primaryCyan transition-colors">
+                  <span className="block font-semibold text-slate-200">Email Inquiries:</span>
+                  <a href={`mailto:${siteConfig.emailAddress}`} className="hover:text-primaryCyan transition-colors font-medium text-slate-300">
                     {siteConfig.emailAddress}
                   </a>
                 </div>
               </li>
-              <li className="flex items-start gap-2">
+              <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-primaryCyan flex-shrink-0 mt-0.5" />
                 <div>
-                  <span className="block font-semibold text-slate-200">Head Office:</span>
-                  <span>{siteConfig.headOfficeAddress}</span>
+                  <span className="block font-semibold text-slate-200">Headquarters:</span>
+                  <span className="font-light text-slate-300">{siteConfig.headOfficeAddress}</span>
                 </div>
               </li>
             </ul>
           </div>
 
-          {/* Col 3: Quick Links */}
+          {/* Col 3: Popular Escapes */}
           <div className="space-y-3">
-            <h4 className="text-sm font-extrabold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-              Popular Tour Packages
+            <h4 className="text-xs font-bold text-white uppercase tracking-widest border-b border-white/[0.08] pb-2 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-gold" />
+              <span>Popular Escapes</span>
             </h4>
-            <ul className="space-y-1.5 text-xs">
+            <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/location/sikkim-tour-package" className="hover:text-primaryCyan transition-colors">
-                  Sikkim Tour Packages
+                <Link href="/location/sikkim-tour-package" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Sikkim & Gangtok Holidays
                 </Link>
               </li>
               <li>
-                <Link href="/location/kashmir-tour-package" className="hover:text-primaryCyan transition-colors">
-                  Kashmir Tour Packages
+                <Link href="/location/kashmir-tour-package" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Kashmir Paradise Honeymoons
                 </Link>
               </li>
               <li>
-                <Link href="/location/darjeeling-tour-packages" className="hover:text-primaryCyan transition-colors">
-                  Darjeeling Tour Packages
+                <Link href="/location/darjeeling-tour-packages" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Darjeeling Tea Hills Tours
                 </Link>
               </li>
               <li>
-                <Link href="/location/kerala-tour-packages" className="hover:text-primaryCyan transition-colors">
-                  Kerala Tour Packages
+                <Link href="/location/kerala-tour-packages" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Kerala Houseboat Escapes
                 </Link>
               </li>
               <li>
-                <Link href="/location/andaman-tour-package" className="hover:text-primaryCyan transition-colors">
-                  Andaman Tour Packages
+                <Link href="/location/andaman-tour-package" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Andaman Islands Diving Packages
                 </Link>
               </li>
               <li>
-                <Link href="/location/bhutan-tour-packages" className="hover:text-primaryCyan transition-colors">
-                  Bhutan Tour Packages
+                <Link href="/location/bhutan-tour-packages" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Bhutan Kingdom Expeditions
                 </Link>
               </li>
               <li>
-                <Link href="/location/bali-tour-packages" className="hover:text-primaryCyan transition-colors">
-                  Bali Tour Packages
+                <Link href="/location/bali-tour-packages" className="hover:text-primaryCyan transition-colors text-slate-400 hover:underline">
+                  Bali Island Luxury Retreats
                 </Link>
               </li>
             </ul>
@@ -129,56 +158,59 @@ export default function Footer() {
 
           {/* Col 4: Newsletter */}
           <div className="space-y-3">
-            <h4 className="text-sm font-extrabold text-white uppercase tracking-wider border-b border-slate-800 pb-2">
-              Travel Beyond Borders!
+            <h4 className="text-xs font-bold text-white uppercase tracking-widest border-b border-white/[0.08] pb-2 flex items-center gap-1.5">
+              <Send className="w-3.5 h-3.5 text-primaryCyan" />
+              <span>Wanderlust Journal</span>
             </h4>
-            <p className="text-xs text-slate-400">
-              Subscribe to The Navigators newsletter to receive exclusive travel deals and itineraries in your inbox.
+            <p className="text-xs text-slate-400 font-light leading-relaxed">
+              Subscribe to receive curated itineraries, private travel discounts, and insider seasonal recommendations.
             </p>
 
             {subStatus?.success ? (
-              <div className="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl text-xs flex items-center gap-1.5 border border-emerald-500/30">
+              <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl text-xs flex items-center gap-2 border border-emerald-500/30">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 <span>{subStatus.message}</span>
               </div>
             ) : (
               <form onSubmit={handleSubscribe} className="space-y-2">
-                <div className="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden p-1">
+                <div className="flex items-center bg-midnight border border-white/[0.1] rounded-xl overflow-hidden p-1 focus-within:border-primaryCyan transition-colors">
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email*"
+                    placeholder="Enter email address..."
                     className="w-full bg-transparent text-xs text-white px-3 py-2 placeholder-slate-500 focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="bg-primaryCyan text-navyDark font-extrabold text-xs px-4 py-2 rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-1"
+                    className="bg-primaryCyan hover:bg-blue-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-all flex items-center justify-center gap-1 shadow-glow"
                   >
                     {submitting ? (
-                      <svg className="animate-spin h-4 w-4 text-navyDark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     ) : (
-                      <span>Subscribe</span>
+                      <span>Join</span>
                     )}
                   </button>
                 </div>
               </form>
             )}
+
+            <div className="pt-2 flex items-center gap-2 text-[11px] text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-gold" />
+              <span>No spam. 100% Privacy guaranteed.</span>
+            </div>
           </div>
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-6 sm:pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-[11px] sm:text-xs text-slate-500 gap-3 sm:gap-4">
-          <p>© {new Date().getFullYear()} The Navigators. All Rights Reserved.</p>
-          <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 sm:gap-4 text-center">
-            <Link href="/" className="hover:text-slate-400">Privacy Policy</Link>
-            <Link href="/" className="hover:text-slate-400">Terms & Conditions</Link>
-            <Link href="/" className="hover:text-slate-400">Cancellation & Refund Policy</Link>
+        <div className="pt-8 border-t border-white/[0.08] flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+          <p>© {new Date().getFullYear()} The Navigators — Travel Beyond Borders. All Rights Reserved.</p>
+          <div className="flex flex-wrap items-center justify-center gap-5 text-slate-400">
+            <Link href="/" className="hover:text-primaryCyan transition-colors">Privacy Policy</Link>
+            <Link href="/" className="hover:text-primaryCyan transition-colors">Terms of Service</Link>
+            <Link href="/" className="hover:text-primaryCyan transition-colors">Cancellation & Refunds</Link>
           </div>
         </div>
       </div>

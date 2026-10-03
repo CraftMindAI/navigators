@@ -1,23 +1,57 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Mail, MapPin, Phone, Facebook, Instagram, LogIn, ChevronDown, Menu, X, Plane, User, Mountain } from 'lucide-react';
+import {
+  Mail,
+  MapPin,
+  Phone,
+  Facebook,
+  Instagram,
+  LogIn,
+  ChevronDown,
+  Menu,
+  X,
+  Compass,
+  Sparkles,
+  User,
+  ArrowRight,
+  Shield,
+  Plane
+} from 'lucide-react';
 import { siteConfig } from '@/config/siteConfig';
 import { supabase } from '@/lib/supabase';
 
+// Curated destinations for mega-dropdown
+const POPULAR_DESTINATIONS = [
+  { name: 'Sikkim & Gangtok', slug: 'sikkim-tour-package', tag: 'Mountains', img: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Kashmir Valley', slug: 'kashmir-tour-package', tag: 'Paradise', img: 'https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Kerala Backwaters', slug: 'kerala-tour-packages', tag: 'Tropical', img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Andaman Islands', slug: 'andaman-tour-package', tag: 'Beaches', img: 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Bhutan Kingdom', slug: 'bhutan-tour-packages', tag: 'Himalayan', img: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=400&q=80' },
+  { name: 'Bali & Tropics', slug: 'bali-tour-packages', tag: 'Island Escape', img: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=400&q=80' },
+];
+
 export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }) {
+  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tourDropdownOpen, setTourDropdownOpen] = useState(false);
-  const [placeDropdownOpen, setPlaceDropdownOpen] = useState(false);
-  const [authModal, setAuthModal] = useState<boolean>(false);
+  const [authModal, setAuthModal] = useState(false);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authMessage, setAuthMessage] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     const session = localStorage.getItem('thenavigators_admin_session');
     if (session === 'true') {
       setIsAdmin(true);
@@ -27,9 +61,8 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
-    setAuthMessage(''); // Clear previous messages
+    setAuthMessage('');
     if (supabase) {
-      // Use the custom RPC function to verify against the encrypted admins table
       const { data: isValid, error } = await supabase.rpc('verify_admin_login', {
         admin_email: authEmail,
         admin_password: authPassword,
@@ -39,14 +72,12 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
         setAuthMessage(error?.message || 'Invalid email or password.');
         setAuthLoading(false);
       } else {
-        // CRITICAL FIX: Save the admin session so the /admin page knows we are logged in!
         localStorage.setItem('thenavigators_admin_session', 'true');
         setIsAdmin(true);
-
         setTimeout(() => {
           setAuthModal(false);
           window.location.href = '/admin';
-        }, 1500);
+        }, 1200);
       }
     } else {
       setAuthMessage('Database connection not established.');
@@ -64,309 +95,368 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
     }
   };
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-    // Close dropdowns when toggling main menu
-    if (mobileMenuOpen) {
-      setTourDropdownOpen(false);
-      setPlaceDropdownOpen(false);
-    }
-  };
-
   return (
     <>
-      {/* Top Bar */}
-      <header className="bg-navyBlue/90 backdrop-blur-md text-white text-xs py-2 px-4 border-b border-slate-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          {/* Left contact info */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-300">
-            <a href={`mailto:${siteConfig.emailAddress}`} className="flex items-center gap-1.5 hover:text-primaryCyan transition-colors">
-              <Mail className="w-3.5 h-3.5 text-primaryCyan" />
-              <span className="hidden xs:inline sm:inline">{siteConfig.emailAddress}</span>
-              <span className="xs:hidden sm:hidden">Email Us</span>
+      {/* Top Utility Bar */}
+      <div className="bg-midnight/90 border-b border-white/[0.05] text-[11px] text-slate-300 py-1.5 px-4 hidden md:block">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <span className="flex items-center gap-1.5 text-primaryCyan font-medium">
+              <Sparkles className="w-3 h-3 text-gold" />
+              <span>Tailor-Made Holiday Expeditions & Concierge</span>
+            </span>
+            <div className="h-3 w-[1px] bg-slate-700" />
+            <a
+              href={`mailto:${siteConfig.emailAddress}`}
+              className="flex items-center gap-1.5 hover:text-white transition-colors"
+            >
+              <Mail className="w-3 h-3 text-slate-400" />
+              <span>{siteConfig.emailAddress}</span>
             </a>
-            <div className="hidden md:flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-primaryCyan" />
+            <div className="h-3 w-[1px] bg-slate-700" />
+            <div className="flex items-center gap-1.5 text-slate-400">
+              <MapPin className="w-3 h-3 text-slate-400" />
               <span>{siteConfig.headOfficeAddress}</span>
             </div>
           </div>
 
-          {/* Right socials & ONLY Sign In button */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 pr-3 sm:pr-4 border-r border-slate-700">
-              <a href={siteConfig.socialLinks.facebook} target="_blank" rel="noreferrer" className="p-1 hover:text-primaryCyan transition-colors" title="Facebook">
-                <Facebook className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <a
+                href={siteConfig.socialLinks.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="w-6 h-6 rounded-full bg-white/[0.04] hover:bg-primaryCyan/20 hover:text-primaryCyan flex items-center justify-center transition-colors"
+                title="Facebook"
+              >
+                <Facebook className="w-3 h-3" />
               </a>
-              <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noreferrer" className="p-1 hover:text-primaryCyan transition-colors" title="Instagram">
-                <Instagram className="w-3.5 h-3.5" />
+              <a
+                href={siteConfig.socialLinks.instagram}
+                target="_blank"
+                rel="noreferrer"
+                className="w-6 h-6 rounded-full bg-white/[0.04] hover:bg-primaryCyan/20 hover:text-primaryCyan flex items-center justify-center transition-colors"
+                title="Instagram"
+              >
+                <Instagram className="w-3 h-3" />
               </a>
             </div>
 
-            {/* Admin Dashboard or Sign In button */}
+            <div className="h-3 w-[1px] bg-slate-700" />
+
             {isAdmin ? (
               <div className="flex items-center gap-2">
                 <Link
                   href="/admin"
-                  className="flex items-center gap-1 hover:text-primaryCyan transition-colors font-medium bg-slate-800/80 px-3 py-1 rounded-md border border-slate-700"
+                  className="flex items-center gap-1 text-primaryCyan hover:text-white transition-colors font-medium px-2 py-0.5 rounded bg-primaryCyan/10 border border-primaryCyan/30"
                 >
-                  <User className="w-3.5 h-3.5 text-primaryCyan" />
+                  <Shield className="w-3 h-3 text-primaryCyan" />
                   <span>Admin</span>
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-1 hover:text-red-400 transition-colors font-medium bg-red-900/30 text-red-200 px-3 py-1 rounded-md border border-red-800/50"
-                  title="Logout"
+                  className="text-red-400 hover:text-red-300 font-medium px-2 py-0.5 rounded bg-red-950/40 border border-red-800/40"
                 >
-                  <LogIn className="w-3.5 h-3.5 rotate-180" />
-                  <span>Logout</span>
+                  Logout
                 </button>
               </div>
             ) : (
               <button
                 onClick={() => setAuthModal(true)}
-                className="flex items-center gap-1 hover:text-primaryCyan transition-colors font-medium bg-slate-800/80 px-3 py-1 rounded-md border border-slate-700"
+                className="flex items-center gap-1 hover:text-primaryCyan transition-colors font-medium text-slate-400"
               >
-                <LogIn className="w-3.5 h-3.5 text-primaryCyan" />
+                <LogIn className="w-3 h-3 text-slate-400" />
                 <span>Sign In</span>
               </button>
             )}
           </div>
         </div>
-      </header>
+      </div>
 
-      {/* Main Navigation */}
-      <nav className="bg-white/95 backdrop-blur-md text-navyDark shadow-md relative z-40 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      {/* Main Floating Glass Navbar */}
+      <header
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? 'bg-midnight/90 backdrop-blur-2xl border-b border-white/[0.08] shadow-2xl py-2.5'
+            : 'bg-midnight/70 backdrop-blur-xl border-b border-white/[0.05] py-3.5'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center">
-            <img
-              src="/logo.svg"
-              alt="The navigators"
-              className="h-12 sm:h-14 w-auto object-contain"
-            />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative">
+              <img
+                src="/Navigator.png"
+                alt="The Navigators"
+                className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              />
+            </div>
           </Link>
 
-          {/* Desktop Nav Links */}
-          <ul className="hidden lg:flex items-center gap-8 text-sm font-bold uppercase tracking-wider text-navyDark">
-            <li>
-              <Link href="/" className="hover:text-primaryCyan transition-colors">
-                Home
-              </Link>
-            </li>
-            <li className="relative group cursor-pointer">
-              <span className="flex items-center gap-1 hover:text-primaryCyan transition-colors">
-                Tour <ChevronDown className="w-4 h-4" />
-              </span>
-              {/* Dropdown */}
-              <div className="absolute top-full left-0 mt-2 w-56 bg-navyDark/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-[0_10px_40px_-10px_rgba(255,78,0,0.3)] opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible transition-all duration-200 py-2 z-50">
-                <Link href="/location/sikkim-tour-package" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Sikkim & Gangtok Packages
-                </Link>
-                <Link href="/location/kashmir-tour-package" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Kashmir Paradise Packages
-                </Link>
-                <Link href="/location/darjeeling-tour-packages" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Darjeeling Tour Packages
-                </Link>
-                <Link href="/location/kerala-tour-packages" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Kerala Backwaters
-                </Link>
-                <Link href="/location/andaman-tour-package" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Andaman Islands
-                </Link>
-              </div>
-            </li>
-            <li className="relative group cursor-pointer">
-              <span className="flex items-center gap-1 hover:text-primaryCyan transition-colors">
-                Place To Visit <ChevronDown className="w-4 h-4" />
-              </span>
-              <div className="absolute top-full left-0 mt-2 w-56 bg-navyDark/95 backdrop-blur-md border border-slate-700 rounded-xl shadow-[0_10px_40px_-10px_rgba(255,78,0,0.3)] opacity-0 group-hover:opacity-100 visibility-hidden group-hover:visible transition-all duration-200 py-2 z-50">
-                <Link href="/location/bhutan-tour-packages" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Bhutan Himalayan Tour
-                </Link>
-                <Link href="/location/bali-tour-packages" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Bali Island Escape
-                </Link>
-                <Link href="/location/shimla-manali-tour-package" className="block px-4 py-2 hover:bg-slate-800 hover:text-primaryCyan text-xs font-bold capitalize text-slate-200">
-                  Shimla Manali Package
-                </Link>
-              </div>
-            </li>
-            <li>
-              <Link href="/contact" className="hover:text-primaryCyan transition-colors">
-                Contact Us
-              </Link>
-            </li>
-            <li>
-              <Link href="/news" className="hover:text-primaryCyan transition-colors">
-                Blogs
-              </Link>
-            </li>
-
-          </ul>
-
-          {/* Right Phone Call CTA */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primaryCyan/20">
-              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primaryCyan text-white shadow-lg shadow-primaryCyan/40">
-                <Phone className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <a href={siteConfig.phoneCallUrl} className="font-extrabold text-base text-navyDark hover:text-primaryCyan transition-colors block leading-tight">
-                {siteConfig.phoneNumber}
-              </a>
-              <span className="text-[11px] font-bold text-slate-500">24/7 Customer Support</span>
-            </div>
-          </div>
-
-          {/* Mobile hamburger menu toggle */}
-          <button
-            onClick={toggleMobileMenu}
-            className="lg:hidden p-2 text-navyDark hover:text-primaryCyan touch-manipulation"
-            aria-label="Toggle mobile menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Dropdown Nav */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden bg-navyBlue/95 backdrop-blur-md border-t border-slate-800 px-4 py-4 space-y-1 max-h-[calc(100dvh-120px)] overflow-y-auto no-scrollbar safe-bottom">
-            <Link href="/" className="block py-3 text-sm font-semibold hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-1 font-medium text-[13px] tracking-wide text-slate-200">
+            <Link
+              href="/"
+              className="px-3.5 py-2 rounded-full hover:text-primaryCyan hover:bg-white/[0.04] transition-all"
+            >
               Home
             </Link>
 
-            {/* Tour Packages Accordion */}
-            <div className="border-t border-slate-800/50">
-              <button
-                onClick={() => setTourDropdownOpen(!tourDropdownOpen)}
-                className="w-full flex items-center justify-between py-3 text-sm font-semibold hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors"
-              >
-                <span>Tour Packages</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${tourDropdownOpen ? 'rotate-180' : ''}`} />
+            {/* Tour Packages Mega Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-full hover:text-primaryCyan hover:bg-white/[0.04] transition-all">
+                <span>Destinations</span>
+                <ChevronDown className="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-180 text-slate-400 group-hover:text-primaryCyan" />
               </button>
-              {tourDropdownOpen && (
-                <div className="pl-4 space-y-1 pb-2">
-                  <Link href="/location/sikkim-tour-package" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Sikkim & Gangtok
-                  </Link>
-                  <Link href="/location/kashmir-tour-package" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Kashmir Paradise
-                  </Link>
-                  <Link href="/location/darjeeling-tour-packages" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Darjeeling
-                  </Link>
-                  <Link href="/location/kerala-tour-packages" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Kerala Backwaters
-                  </Link>
-                  <Link href="/location/andaman-tour-package" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Andaman Islands
+
+              {/* Mega Dropdown Panel */}
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[620px] p-4 bg-midnight/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/[0.08]">
+                  <div className="flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-primaryCyan" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                      Handpicked Escapes & Regions
+                    </span>
+                  </div>
+                  <Link
+                    href="/#packages"
+                    className="text-xs font-semibold text-primaryCyan hover:underline flex items-center gap-1"
+                  >
+                    View All Packages <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
-              )}
-            </div>
 
-            {/* Place To Visit Accordion */}
-            <div className="border-t border-slate-800/50">
-              <button
-                onClick={() => setPlaceDropdownOpen(!placeDropdownOpen)}
-                className="w-full flex items-center justify-between py-3 text-sm font-semibold hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors"
-              >
-                <span>Place To Visit</span>
-                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${placeDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {placeDropdownOpen && (
-                <div className="pl-4 space-y-1 pb-2">
-                  <Link href="/location/bhutan-tour-packages" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Bhutan Himalayan Tour
-                  </Link>
-                  <Link href="/location/bali-tour-packages" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Bali Island Escape
-                  </Link>
-                  <Link href="/location/shimla-manali-tour-package" className="block py-2.5 text-xs font-bold capitalize text-slate-300 hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-                    Shimla Manali
-                  </Link>
+                <div className="grid grid-cols-3 gap-3">
+                  {POPULAR_DESTINATIONS.map((dest) => (
+                    <Link
+                      key={dest.slug}
+                      href={`/location/${dest.slug}`}
+                      className="group/item relative h-28 rounded-xl overflow-hidden border border-white/[0.06] hover:border-primaryCyan/40 transition-all flex flex-col justify-end p-2.5"
+                    >
+                      <img
+                        src={dest.img}
+                        alt={dest.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/50 to-transparent" />
+                      <div className="relative z-10">
+                        <span className="text-[9px] font-bold uppercase text-gold bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-xs">
+                          {dest.tag}
+                        </span>
+                        <h4 className="text-xs font-bold text-white mt-1 group-hover/item:text-primaryCyan transition-colors line-clamp-1">
+                          {dest.name}
+                        </h4>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              )}
+              </div>
             </div>
 
-            <Link href="/contact" className="block py-3 text-sm font-semibold hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-              Contact Us
-            </Link>
-            <Link href="/news" className="block py-3 text-sm font-semibold hover:text-primaryCyan rounded-lg hover:bg-slate-800/50 px-3 transition-colors">
-              Blogs
+            <Link
+              href="/news"
+              className="px-3.5 py-2 rounded-full hover:text-primaryCyan hover:bg-white/[0.04] transition-all"
+            >
+              Travel Journal
             </Link>
 
-            <div className="pt-3 mt-2 border-t border-slate-700 flex items-center gap-3 px-3">
-              <Phone className="w-5 h-5 text-primaryCyan" />
-              <a href={siteConfig.phoneCallUrl} className="font-bold text-sm text-white">
-                {siteConfig.phoneNumber} (24/7 Support)
+            <Link
+              href="/contact"
+              className="px-3.5 py-2 rounded-full hover:text-primaryCyan hover:bg-white/[0.04] transition-all"
+            >
+              Contact
+            </Link>
+          </nav>
+
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-3">
+            {/* Phone Call CTA */}
+            <a
+              href={siteConfig.phoneCallUrl}
+              className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] hover:border-primaryCyan/40 hover:bg-white/[0.08] transition-all group"
+            >
+              <div className="w-7 h-7 rounded-full bg-primaryCyan/20 text-primaryCyan flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Phone className="w-3.5 h-3.5" />
+              </div>
+              <div className="text-left pr-1">
+                <span className="block text-[9px] uppercase tracking-wider text-slate-400 font-bold leading-none">
+                  24/7 Concierge
+                </span>
+                <span className="text-xs font-bold text-white group-hover:text-primaryCyan transition-colors leading-tight">
+                  {siteConfig.phoneNumber}
+                </span>
+              </div>
+            </a>
+
+            {/* Quick Consultation Button */}
+            <button
+              onClick={() => onOpenInquiry ? onOpenInquiry() : window.location.href = '/contact'}
+              className="px-4 py-2 rounded-full bg-gradient-to-r from-primaryCyan to-blue-600 hover:from-blue-500 hover:to-primaryCyan text-white text-xs font-bold tracking-wide shadow-glow hover:shadow-cyanGlow transition-all duration-300 flex items-center gap-1.5 touch-manipulation"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-200" />
+              <span>Plan My Trip</span>
+            </button>
+
+            {/* Mobile Menu Trigger */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors"
+              aria-label="Toggle Menu"
+            >
+              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Drawer */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden fixed inset-x-0 top-full bg-midnight/98 backdrop-blur-2xl border-b border-white/[0.1] shadow-2xl px-5 py-6 max-h-[85vh] overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-300">
+            <nav className="space-y-2">
+              <Link
+                href="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-primaryCyan transition-colors"
+              >
+                Home
+              </Link>
+
+              {/* Mobile Destination Accordion */}
+              <div>
+                <button
+                  onClick={() => setTourDropdownOpen(!tourDropdownOpen)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-primaryCyan transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-primaryCyan" />
+                    <span>Explore Destinations</span>
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 transition-transform ${
+                      tourDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {tourDropdownOpen && (
+                  <div className="grid grid-cols-2 gap-2 mt-2 pl-2">
+                    {POPULAR_DESTINATIONS.map((d) => (
+                      <Link
+                        key={d.slug}
+                        href={`/location/${d.slug}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:border-primaryCyan/40 text-xs font-bold text-slate-200 hover:text-primaryCyan"
+                      >
+                        {d.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href="/news"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-primaryCyan transition-colors"
+              >
+                Travel Journal & Guides
+              </Link>
+
+              <Link
+                href="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-200 hover:bg-white/[0.06] hover:text-primaryCyan transition-colors"
+              >
+                Contact Concierge
+              </Link>
+            </nav>
+
+            <div className="mt-6 pt-5 border-t border-white/[0.08] space-y-3">
+              <a
+                href={siteConfig.phoneCallUrl}
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/[0.05] border border-white/[0.08] text-sm font-bold text-white hover:text-primaryCyan"
+              >
+                <Phone className="w-4 h-4 text-primaryCyan" />
+                <span>Call {siteConfig.phoneNumber}</span>
               </a>
+
+              <div className="flex items-center justify-between px-2 pt-2 text-xs text-slate-400">
+                <span>Shimla, Himachal Pradesh</span>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setAuthModal(true);
+                  }}
+                  className="text-primaryCyan font-semibold"
+                >
+                  Admin Access
+                </button>
+              </div>
             </div>
           </div>
         )}
-      </nav>
+      </header>
 
-      {/* Sign In Modal */}
+      {/* Admin Sign In Modal */}
       {authModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-navyBlue/95 backdrop-blur-md text-white w-full max-w-md p-6 rounded-2xl border border-slate-700 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel text-white w-full max-w-md p-6 rounded-2xl relative shadow-2xl">
             <button
               onClick={() => setAuthModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white"
+              className="absolute top-4 right-4 text-slate-400 hover:text-white w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
-            <h3 className="text-xl font-bold text-white mb-2">
-              Sign In to The Navigators
-            </h3>
-            <p className="text-xs text-slate-400 mb-6">
-              Enter your credentials to access your account or Admin Dashboard.
+
+            <div className="flex items-center gap-2 mb-2 text-primaryCyan">
+              <Shield className="w-5 h-5 text-primaryCyan" />
+              <span className="text-xs font-bold uppercase tracking-wider">The Navigators Portal</span>
+            </div>
+
+            <h3 className="text-xl font-bold text-white mb-1">Administrator Sign In</h3>
+            <p className="text-xs text-slate-400 mb-5">
+              Secure credentials required to manage tour packages, leads, and blogs.
             </p>
 
             {authMessage ? (
-              <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 rounded-lg text-sm mb-4">
+              <div className="p-3 bg-red-500/20 border border-red-500 text-red-200 rounded-xl text-xs mb-4">
                 {authMessage}
               </div>
             ) : null}
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Email Address</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Admin Email</label>
                 <input
                   type="email"
                   required
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="admin@thenavigators.com"
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">Password</label>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Password</label>
                 <input
                   type="password"
                   required
                   value={authPassword}
                   onChange={(e) => setAuthPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={authLoading}
-                className="w-full bg-gradient-to-r from-primaryCyan to-blue-600 text-navyDark font-bold py-2.5 rounded-lg text-sm hover:brightness-110 transition-all shadow-glow flex items-center justify-center"
+                className="w-full bg-gradient-to-r from-primaryCyan to-blue-600 hover:brightness-110 text-white font-bold py-3 rounded-xl text-sm shadow-glow flex items-center justify-center gap-2 transition-all mt-2"
               >
                 {authLoading ? (
-                  <svg className="animate-spin h-5 w-5 text-navyDark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
-                  'Sign In'
+                  <span>Sign In to Dashboard</span>
                 )}
               </button>
             </form>
