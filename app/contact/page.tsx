@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, ArrowLeft } from 'lucide-react';
 import { submitContact } from '@/lib/supabase';
+import { siteConfig } from '@/config/siteConfig';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -66,8 +67,8 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-white">Phone & WhatsApp</h4>
-                <a href="tel:+919811980218" className="text-[11px] sm:text-xs text-slate-300 hover:text-primaryCyan block mt-1 font-semibold transition-colors">
-                  +91 9811980218 (24/7 Support)
+                <a href={siteConfig.phoneCallUrl} className="text-[11px] sm:text-xs text-slate-300 hover:text-primaryCyan block mt-1 font-semibold transition-colors">
+                  {siteConfig.phoneNumber} (24/7 Support)
                 </a>
               </div>
             </div>
@@ -78,11 +79,8 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-white">Email Address</h4>
-                <a href="mailto:contact@thenavigatorsholidays.com" className="text-[11px] sm:text-xs text-slate-300 hover:text-primaryCyan block mt-1 font-semibold transition-colors">
-                  contact@thenavigatorsholidays.com
-                </a>
-                <a href="mailto:contact@etripto.in" className="text-[11px] sm:text-xs text-slate-400 hover:text-primaryCyan block mt-0.5 transition-colors">
-                  contact@etripto.in
+                <a href={`mailto:${siteConfig.emailAddress}`} className="text-[11px] sm:text-xs text-slate-300 hover:text-primaryCyan block mt-1 font-semibold transition-colors">
+                  {siteConfig.emailAddress}
                 </a>
               </div>
             </div>

@@ -8,6 +8,7 @@ import { TourPackage } from '@/types';
 import InquiryModal from '@/components/InquiryModal';
 import { Star, Clock, MapPin, CheckCircle2, XCircle, Hotel, Utensils, Car, Compass, Calendar, ChevronDown, Phone, Send, ArrowLeft } from 'lucide-react';
 import { submitInquiry } from '@/lib/supabase';
+import { siteConfig } from '@/config/siteConfig';
 
 export default function TourDetailPage() {
   const params = useParams();
@@ -297,8 +298,8 @@ export default function TourDetailPage() {
               <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-center gap-2 text-xs text-slate-300">
                 <Phone className="w-4 h-4 text-primaryCyan" />
                 <span>Or Call Us: </span>
-                <a href="tel:+919811980218" className="font-bold text-white hover:text-primaryCyan">
-                  +91 9811980218
+                <a href={siteConfig.phoneCallUrl} className="font-bold text-white hover:text-primaryCyan">
+                  {siteConfig.phoneNumber}
                 </a>
               </div>
             </div>

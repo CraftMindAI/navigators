@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, MapPin, Phone, Facebook, Instagram, Youtube, LogIn, ChevronDown, Menu, X, Plane, User, Mountain } from 'lucide-react';
+import { Mail, MapPin, Phone, Facebook, Instagram, LogIn, ChevronDown, Menu, X, Plane, User, Mountain } from 'lucide-react';
 import { siteConfig } from '@/config/siteConfig';
 import { supabase } from '@/lib/supabase';
 
@@ -100,9 +100,6 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
               <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noreferrer" className="p-1 hover:text-primaryCyan transition-colors" title="Instagram">
                 <Instagram className="w-3.5 h-3.5" />
               </a>
-              <a href={siteConfig.socialLinks.youtube} target="_blank" rel="noreferrer" className="p-1 hover:text-primaryCyan transition-colors" title="YouTube">
-                <Youtube className="w-3.5 h-3.5" />
-              </a>
             </div>
 
             {/* Admin Dashboard or Sign In button */}
@@ -143,7 +140,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
           {/* Brand Logo */}
           <Link href="/" className="flex items-center">
             <img
-              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.svg`}
+              src="/logo.svg"
               alt="The navigators"
               className="h-12 sm:h-14 w-auto object-contain"
             />

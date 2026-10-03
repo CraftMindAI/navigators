@@ -6,18 +6,16 @@ export const siteConfig = {
   tagline: 'TRAVEL THE WORLD',
 
   // User Contact Details
-  phoneNumber: '+91 85806-98943',
-  phoneCallUrl: 'tel:+918580698943',
-  whatsappNumber: '918580698943',
+  phoneNumber: '+91 70183 44434',
+  phoneCallUrl: 'tel:+917018344434',
+  whatsappNumber: '917018344434',
 
-  emailAddress: 'contact@thenavigators.in',
-  secondaryEmail: 'info@thenavigators.in',
+  emailAddress: 'thenavigatorindia@gmail.com',
 
   headOfficeAddress: 'Shimla, Himachal Pradesh, India',
 
   socialLinks: {
-    facebook: 'https://www.facebook.com/thenavigatorsin',
-    instagram: 'https://www.instagram.com/thenavigatorsin',
-    youtube: 'https://www.youtube.com/@thenavigatorsin',
+    facebook: 'https://www.facebook.com/share/1GunPU7Q3F/',
+    instagram: 'https://www.instagram.com/thenavigatorsindia_._?stkn=bDE2bnd2ZWVrN3l0',
   }
 };

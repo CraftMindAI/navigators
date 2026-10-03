@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Send, CheckCircle2, Facebook, Instagram, Youtube, Plane, Mountain } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, Facebook, Instagram, Plane, Mountain } from 'lucide-react';
 import { subscribeNewsletter } from '@/lib/supabase';
 import { siteConfig } from '@/config/siteConfig';
 
@@ -29,7 +29,7 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="flex items-center">
               <img
-                src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo-dark.svg`}
+                src="/logo-dark.svg"
                 alt="The navigators"
                 className="h-10 sm:h-14 w-auto object-contain hover:opacity-90 transition-opacity"
               />
@@ -45,9 +45,6 @@ export default function Footer() {
               </a>
               <a href={siteConfig.socialLinks.instagram} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-primaryCyan hover:text-navyDark flex items-center justify-center transition-colors">
                 <Instagram className="w-4 h-4" />
-              </a>
-              <a href={siteConfig.socialLinks.youtube} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-slate-800 hover:bg-primaryCyan hover:text-navyDark flex items-center justify-center transition-colors">
-                <Youtube className="w-4 h-4" />
               </a>
             </div>
           </div>
