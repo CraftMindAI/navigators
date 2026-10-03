@@ -18,8 +18,8 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 async function createAdmin() {
-  const email = 'admin@thenavigators.com';
-  const password = 'admin@123'; // Must be at least 6 chars
+  const email = process.env.VITE_ADMIN_EMAIL;
+  const password = process.env.VITE_ADMIN_PASSWORD; // Must be at least 6 chars
 
   console.log(`Creating/Migrating admin user: ${email}`);
 

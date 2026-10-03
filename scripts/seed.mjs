@@ -9,8 +9,8 @@ const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
 const dbUrl = env.DIRECT_URL || env.DATABASE_URL;
 
 const admin = {
-  email: env.ADMIN_EMAIL || "admin@thenavigators.com",
-  password: env.ADMIN_PASSWORD || "admin@123",
+  email: env.VITE_ADMIN_EMAIL || "admin@thenavigators.com",
+  password: env.VITE_ADMIN_PASSWORD|| "admin@123",
   name: env.ADMIN_NAME || "Admin",
 };
 
@@ -58,11 +58,21 @@ async function seedAuthUser() {
   }
 }
 
-/** Upsert the admin row into public.admins with a bcrypt-hashed password. */
-async function seedAdminsTable() {
+/**
+ * Upsert the admin into public.admins, and mark the public.users row (kept in sync with
+ * Auth by the on_auth_user_* triggers) as role 'admin' so verify_admin_login() accepts it.
+ */
+async function seedAdminsTable(userId) {
   const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
   await client.connect();
   try {
+    const { rowCount } = await client.query(
+      "UPDATE public.users SET role = 'admin', name = $2 WHERE id = $1",
+      [userId, admin.name],
+    );
+    if (rowCount === 0) throw new Error(`public.users has no row for ${admin.email} (is the auth sync trigger installed?)`);
+    console.log(`Table public.users: ${admin.email} set to role 'admin'`);
+
     await client.query("CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions");
     await client.query(
       `INSERT INTO public.admins (email, password, name, role)
@@ -78,8 +88,8 @@ async function seedAdminsTable() {
 }
 
 try {
-  await seedAuthUser();
-  await seedAdminsTable();
+  const userId = await seedAuthUser();
+  await seedAdminsTable(userId);
   console.log(`\nLogin with:\n  Email:    ${admin.email}\n  Password: ${admin.password}`);
 } catch (err) {
   console.error("Seed failed:", err.message ?? err);
