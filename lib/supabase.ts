@@ -22,7 +22,7 @@ export async function getTours(): Promise<TourPackage[]> {
     try {
       const { data, error } = await supabase
         .from('tours')
-        .select('*')
+        .select('*, destination:destinations(highlights, inclusions)')
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
@@ -39,8 +39,11 @@ export async function getTours(): Promise<TourPackage[]> {
           rating: Number(t.rating),
           reviewCount: t.review_count,
           imageUrl: t.image_url,
-          highlights: t.highlights || [],
-          inclusions: t.inclusions || [],
+          highlights: t.highlights?.length ? t.highlights : t.destination?.highlights || [],
+          inclusions: t.inclusions?.length ? t.inclusions : t.destination?.inclusions || [],
+          ownHighlights: t.highlights || [],
+          ownInclusions: t.inclusions || [],
+          destinationId: t.destination_id,
           exclusions: t.exclusions || [],
           itinerary: t.itinerary || [],
           isFeatured: t.is_featured,
@@ -74,6 +77,9 @@ export async function getDestinations(): Promise<Destination[]> {
           category: d.category,
           imageUrl: d.image_url,
           packageCount: d.package_count,
+          description: d.description,
+          highlights: d.highlights || [],
+          inclusions: d.inclusions || [],
         }));
       }
     } catch (err) {
@@ -113,6 +119,7 @@ export async function createTour(newTour: Omit<TourPackage, 'id'>): Promise<{ su
           image_url: newTour.imageUrl,
           highlights: newTour.highlights,
           inclusions: newTour.inclusions || [],
+          destination_id: newTour.destinationId || null,
           is_featured: newTour.isFeatured || false,
           is_trending: newTour.isTrending || false,
         },
@@ -149,6 +156,7 @@ export async function updateTour(id: string, updatedTour: Partial<TourPackage>):
         image_url: updatedTour.imageUrl,
         highlights: updatedTour.highlights,
         inclusions: updatedTour.inclusions,
+        destination_id: updatedTour.destinationId,
         is_featured: updatedTour.isFeatured,
         is_trending: updatedTour.isTrending,
       }).eq('id', id);
@@ -193,6 +201,8 @@ export async function createDestination(newDest: Omit<Destination, 'id'>): Promi
           category: newDest.category,
           image_url: newDest.imageUrl,
           package_count: newDest.packageCount || 5,
+          highlights: newDest.highlights || [],
+          inclusions: newDest.inclusions || [],
         },
       ]);
 
@@ -395,6 +405,8 @@ export async function updateDestination(id: string, updatedDest: Partial<Destina
         category: updatedDest.category,
         image_url: updatedDest.imageUrl,
         package_count: updatedDest.packageCount,
+        highlights: updatedDest.highlights,
+        inclusions: updatedDest.inclusions,
       }).eq('id', id);
 
       if (error) throw error;

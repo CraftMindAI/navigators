@@ -43,6 +43,8 @@ export default function AdminPage() {
   const [tourImageUrl, setTourImageUrl] = useState('');
   const [tourHighlight1, setTourHighlight1] = useState('');
   const [tourHighlight2, setTourHighlight2] = useState('');
+  const [tourInclusions, setTourInclusions] = useState('');
+  const [tourDestinationId, setTourDestinationId] = useState('');
   const [tourSubmitting, setTourSubmitting] = useState(false);
   const [tourMsg, setTourMsg] = useState('');
 
@@ -50,6 +52,8 @@ export default function AdminPage() {
   const [placeName, setPlaceName] = useState('');
   const [placeCategory, setPlaceCategory] = useState<'domestic' | 'international'>('domestic');
   const [placeImageUrl, setPlaceImageUrl] = useState('');
+  const [placeHighlights, setPlaceHighlights] = useState('');
+  const [placeInclusions, setPlaceInclusions] = useState('');
   const [placeSubmitting, setPlaceSubmitting] = useState(false);
   const [placeMsg, setPlaceMsg] = useState('');
   const [placeSubmitted, setPlaceSubmitted] = useState(false);
@@ -229,12 +233,17 @@ export default function AdminPage() {
     }
   };
 
+  /** Textarea value (one item per line) -> trimmed, non-empty list. */
+  const toLines = (text: string) => text.split('\n').map((l) => l.trim()).filter(Boolean);
+
   const handleCreateTour = async (e: React.FormEvent) => {
     e.preventDefault();
     setTourSubmitting(true);
     setTourMsg('');
 
     const highlights = [tourHighlight1, tourHighlight2].filter(Boolean);
+    const inclusions = toLines(tourInclusions);
+    const destinationId = tourDestinationId || null;
     
     let res;
     if (editingTourId) {
@@ -248,7 +257,10 @@ export default function AdminPage() {
         durationNights: parseInt(tourNights) || 5,
         durationDays: parseInt(tourDays) || 6,
         imageUrl: tourImageUrl || undefined,
-        highlights: highlights.length > 0 ? highlights : undefined,
+        // Empty lists fall back to the destination's highlights / inclusions
+        highlights,
+        inclusions,
+        destinationId,
       });
       if (res.success) {
         setEditingTourId(null);
@@ -272,7 +284,9 @@ export default function AdminPage() {
         rating: 5.0,
         reviewCount: 10,
         imageUrl: tourImageUrl || 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80',
-        highlights: highlights.length > 0 ? highlights : ['Customized Itinerary', 'Luxury Hotel Stay'],
+        highlights,
+        inclusions,
+        destinationId,
         isFeatured: true,
         isTrending: true,
       });
@@ -301,6 +315,8 @@ export default function AdminPage() {
       setTourImageUrl('');
       setTourHighlight1('');
       setTourHighlight2('');
+      setTourInclusions('');
+      setTourDestinationId('');
     }
   };
 
@@ -314,8 +330,10 @@ export default function AdminPage() {
     setTourNights(tour.durationNights.toString());
     setTourDays(tour.durationDays.toString());
     setTourImageUrl(tour.imageUrl);
-    setTourHighlight1(tour.highlights[0] || '');
-    setTourHighlight2(tour.highlights[1] || '');
+    setTourHighlight1(tour.ownHighlights?.[0] || '');
+    setTourHighlight2(tour.ownHighlights?.[1] || '');
+    setTourInclusions((tour.ownInclusions || []).join('\n'));
+    setTourDestinationId(tour.destinationId || '');
     setActiveTab('create-tour');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -338,6 +356,8 @@ export default function AdminPage() {
         name: placeName,
         category: placeCategory,
         imageUrl: placeImageUrl || undefined,
+        highlights: toLines(placeHighlights),
+        inclusions: toLines(placeInclusions),
       });
       if (res.success) {
         setEditingDestinationId(null);
@@ -351,6 +371,8 @@ export default function AdminPage() {
         category: placeCategory,
         imageUrl: placeImageUrl || 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=600&q=80',
         packageCount: 12,
+        highlights: toLines(placeHighlights),
+        inclusions: toLines(placeInclusions),
       });
     }
 
@@ -361,6 +383,8 @@ export default function AdminPage() {
       setPlaceSubmitted(true);
       setPlaceName('');
       setPlaceImageUrl('');
+      setPlaceHighlights('');
+      setPlaceInclusions('');
     }
   };
 
@@ -369,6 +393,8 @@ export default function AdminPage() {
     setPlaceName(place.name);
     setPlaceCategory(place.category);
     setPlaceImageUrl(place.imageUrl);
+    setPlaceHighlights((place.highlights || []).join('\n'));
+    setPlaceInclusions((place.inclusions || []).join('\n'));
     setActiveTab('create-place');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -545,6 +571,8 @@ export default function AdminPage() {
               setTourImageUrl('');
               setTourHighlight1('');
               setTourHighlight2('');
+              setTourInclusions('');
+              setTourDestinationId('');
               setActiveTab('create-tour');
             }}
             className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-tour' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
@@ -568,6 +596,8 @@ export default function AdminPage() {
               setEditingDestinationId(null);
               setPlaceName('');
               setPlaceImageUrl('');
+              setPlaceHighlights('');
+              setPlaceInclusions('');
               setPlaceSubmitted(false);
               setActiveTab('create-place');
             }}
@@ -903,6 +933,8 @@ export default function AdminPage() {
                     setTourImageUrl('');
                     setTourHighlight1('');
                     setTourHighlight2('');
+                    setTourInclusions('');
+                    setTourDestinationId('');
                   }}
                   className="text-xs text-slate-400 hover:text-white underline"
                 >
@@ -1044,6 +1076,20 @@ export default function AdminPage() {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">Destination (default highlights &amp; inclusions)</label>
+                <select
+                  value={tourDestinationId}
+                  onChange={(e) => setTourDestinationId(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                >
+                  <option value="">— None —</option>
+                  {adminDestinations.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Key Highlight 1</label>
                 <input
                   type="text"
@@ -1061,6 +1107,17 @@ export default function AdminPage() {
                   value={tourHighlight2}
                   onChange={(e) => setTourHighlight2(e.target.value)}
                   placeholder="e.g. Kanchenjunga View from Pelling Skywalk"
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">What&apos;s Included (one per line)</label>
+                <textarea
+                  rows={4}
+                  value={tourInclusions}
+                  onChange={(e) => setTourInclusions(e.target.value)}
+                  placeholder="Leave empty to use the destination's inclusions"
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
                 />
               </div>
@@ -1089,6 +1146,8 @@ export default function AdminPage() {
                     setEditingDestinationId(null);
                     setPlaceName('');
                     setPlaceImageUrl('');
+                    setPlaceHighlights('');
+                    setPlaceInclusions('');
                     setPlaceSubmitted(false);
                   }}
                   className="text-xs text-slate-400 hover:text-white underline"
@@ -1184,6 +1243,29 @@ export default function AdminPage() {
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">Tour Highlights (one per line)</label>
+                    <textarea
+                      rows={5}
+                      value={placeHighlights}
+                      onChange={(e) => setPlaceHighlights(e.target.value)}
+                      placeholder={'Tsomgo Lake & Baba Mandir\nNathula Pass Border Visit'}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">What&apos;s Included (one per line)</label>
+                    <textarea
+                      rows={5}
+                      value={placeInclusions}
+                      onChange={(e) => setPlaceInclusions(e.target.value)}
+                      placeholder={'Hotel accommodation on twin sharing basis\nDaily breakfast & dinner'}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    />
+                    <p className="text-[11px] text-slate-500 mt-1">Shown on every package of this destination that has no highlights / inclusions of its own.</p>
                   </div>
 
                   <button

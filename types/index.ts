@@ -11,8 +11,14 @@ export interface TourPackage {
   rating: number;
   reviewCount: number;
   imageUrl: string;
+  /** Effective highlights: the tour's own, or its destination's when the tour has none. */
   highlights: string[];
+  /** Effective inclusions: the tour's own, or its destination's when the tour has none. */
   inclusions?: string[];
+  /** Highlights / inclusions stored on the tour row itself (without destination fallback). */
+  ownHighlights?: string[];
+  ownInclusions?: string[];
+  destinationId?: string | null;
   exclusions?: string[];
   itinerary?: { day: number; title: string; description: string }[];
   isFeatured?: boolean;
@@ -41,6 +47,8 @@ export interface Destination {
   imageUrl: string;
   packageCount: number;
   description?: string;
+  highlights?: string[];
+  inclusions?: string[];
 }
 
 export interface Blog {
