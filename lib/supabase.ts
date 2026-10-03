@@ -318,7 +318,7 @@ export async function subscribeNewsletter(email: string): Promise<{ success: boo
     try {
       const { error } = await supabase.from('subscribers').insert([{ email }]);
       if (error) throw error;
-      return { success: true, message: 'Thank you for subscribing to Exporio Holidays newsletter!' };
+      return { success: true, message: 'Thank you for subscribing to The Navigators newsletter!' };
     } catch (err) {
       console.warn('Fallback subscriber save');
     }
@@ -327,7 +327,7 @@ export async function subscribeNewsletter(email: string): Promise<{ success: boo
   if (!subscribersList.includes(email)) {
     subscribersList.push(email);
   }
-  return { success: true, message: 'Thank you for subscribing to Exporio Holidays newsletter!' };
+  return { success: true, message: 'Thank you for subscribing to The Navigators newsletter!' };
 }
 
 /**

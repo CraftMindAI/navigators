@@ -14,7 +14,7 @@ const STATIC_BLOGS = [
     slug: 'top-10-places-in-sikkim',
     category: 'Travel Guide',
     created_at: '2026-02-15T00:00:00.000Z',
-    author: 'Exporio Travel Team',
+    author: 'The Navigators Travel Team',
     content: 'From high-altitude Tsomgo Lake and Nathula Pass to the skywalk in Pelling, explore the best tourist attractions in Sikkim.',
     image_url: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80',
   },
@@ -66,7 +66,7 @@ export default function BlogsPage() {
             <BookOpen className="w-4 h-4" /> Travel Insights & Guides
           </div>
           <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-3">
-            Exporio Travel Blogs
+            The Navigators Travel Blogs
           </h1>
           <p className="text-slate-300 text-sm md:text-base">
             Expert travel tips, destination itineraries, and holiday advice from our local travel coordinators.

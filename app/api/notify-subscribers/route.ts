@@ -35,11 +35,11 @@ export async function POST(request: Request) {
       },
     });
 
-    const appUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://craftmindai.github.io/Exporio_holiday_Travel/';
+    const appUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://craftmindai.github.io/The Navigators_holiday_Travel/';
     const tourUrl = slug ? `${appUrl}/tour/${slug}` : appUrl;
 
     const mailOptions = {
-      from: `"Exporio Holidays" <${process.env.EMAIL_USER}>`,
+      from: `"The Navigators" <${process.env.EMAIL_USER}>`,
       bcc: subscriberEmails,
       subject: `New Tour Package Available: ${tourTitle}`,
       html: `
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
           <h2 style="color: #0b2038;">New Tour Package Announcement!</h2>
           <p>Hi there,</p>
           <p>We are excited to announce a new tour package: <strong>${tourTitle}</strong>.</p>
-          <p>Check out the details and book your next adventure with Exporio Holidays!</p>
+          <p>Check out the details and book your next adventure with The Navigators!</p>
           <p><a href="${tourUrl}" style="background-color: #00d2ff; color: #0b2038; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Tour Package</a></p>
           <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
           <p style="font-size: 12px; color: #999;">You are receiving this email because you subscribed to our newsletter.</p>

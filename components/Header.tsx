@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, MapPin, Phone, Facebook, Instagram, Youtube, LogIn, ChevronDown, Menu, X, Plane, User } from 'lucide-react';
+import { Mail, MapPin, Phone, Facebook, Instagram, Youtube, LogIn, ChevronDown, Menu, X, Plane, User, Mountain } from 'lucide-react';
 import { siteConfig } from '@/config/siteConfig';
 import { supabase } from '@/lib/supabase';
 
@@ -18,7 +18,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
   const [isAdmin, setIsAdmin] = useState(false);
 
   React.useEffect(() => {
-    const session = localStorage.getItem('exporio_admin_session');
+    const session = localStorage.getItem('thenavigators_admin_session');
     if (session === 'true') {
       setIsAdmin(true);
     }
@@ -40,7 +40,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
         setAuthLoading(false);
       } else {
         // CRITICAL FIX: Save the admin session so the /admin page knows we are logged in!
-        localStorage.setItem('exporio_admin_session', 'true');
+        localStorage.setItem('thenavigators_admin_session', 'true');
         setIsAdmin(true);
 
         setTimeout(() => {
@@ -55,7 +55,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('exporio_admin_session');
+    localStorage.removeItem('thenavigators_admin_session');
     setIsAdmin(false);
     if (window.location.pathname === '/admin') {
       window.location.href = '/';
@@ -138,25 +138,19 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
       </header>
 
       {/* Main Navigation */}
-      <nav className="bg-navyDark/90 backdrop-blur-md text-white shadow-[0_10px_30px_-10px_rgba(255,78,0,0.2)] relative z-40 border-b border-primaryCyan/20">
+      <nav className="bg-white/95 backdrop-blur-md text-navyDark shadow-md relative z-40 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           {/* Brand Logo */}
           <Link href="/" className="flex items-center">
-            <div className="flex flex-col">
-              <div className="flex items-center">
-                <span className="text-2xl sm:text-3xl font-black tracking-widest text-white uppercase">
-                  Exporio
-                </span>
-                <Plane className="w-5 h-5 text-primaryCyan ml-1 transform rotate-45" strokeWidth={2.5} />
-              </div>
-              <span className="text-[10px] sm:text-xs font-bold tracking-[0.25em] text-slate-300 uppercase mt-0.5">
-                Holidays
-              </span>
-            </div>
+            <img
+              src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo.svg`}
+              alt="The navigators"
+              className="h-12 sm:h-14 w-auto object-contain"
+            />
           </Link>
 
           {/* Desktop Nav Links */}
-          <ul className="hidden lg:flex items-center gap-8 text-sm font-extrabold uppercase tracking-wider text-slate-100">
+          <ul className="hidden lg:flex items-center gap-8 text-sm font-bold uppercase tracking-wider text-navyDark">
             <li>
               <Link href="/" className="hover:text-primaryCyan transition-colors">
                 Home
@@ -216,21 +210,23 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
 
           {/* Right Phone Call CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primaryCyan/20 text-primaryCyan flex items-center justify-center shadow-sm border border-primaryCyan/30">
-              <Phone className="w-5 h-5 animate-pulse" />
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primaryCyan/20">
+              <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primaryCyan text-white shadow-lg shadow-primaryCyan/40">
+                <Phone className="w-4 h-4" />
+              </div>
             </div>
             <div>
-              <a href={siteConfig.phoneCallUrl} className="font-extrabold text-base text-white hover:text-primaryCyan transition-colors block leading-tight">
+              <a href={siteConfig.phoneCallUrl} className="font-extrabold text-base text-navyDark hover:text-primaryCyan transition-colors block leading-tight">
                 {siteConfig.phoneNumber}
               </a>
-              <span className="text-[11px] font-bold text-slate-400">24/7 Customer Support</span>
+              <span className="text-[11px] font-bold text-slate-500">24/7 Customer Support</span>
             </div>
           </div>
 
           {/* Mobile hamburger menu toggle */}
           <button
             onClick={toggleMobileMenu}
-            className="lg:hidden p-2 text-slate-300 hover:text-primaryCyan touch-manipulation"
+            className="lg:hidden p-2 text-navyDark hover:text-primaryCyan touch-manipulation"
             aria-label="Toggle mobile menu"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -326,7 +322,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
               <X className="w-5 h-5" />
             </button>
             <h3 className="text-xl font-bold text-white mb-2">
-              Sign In to Exporio Holidays
+              Sign In to The Navigators
             </h3>
             <p className="text-xs text-slate-400 mb-6">
               Enter your credentials to access your account or Admin Dashboard.
@@ -346,7 +342,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                   required
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
-                  placeholder="admin@exporio.com"
+                  placeholder="admin@thenavigators.com"
                   className="w-full bg-slate-800/80 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
                 />
               </div>

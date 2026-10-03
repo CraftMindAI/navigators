@@ -8,7 +8,7 @@ export default function AutoPopupForm() {
 
   useEffect(() => {
     // Check if user has closed modal in current session
-    const hasClosed = sessionStorage.getItem('exporio_popup_closed');
+    const hasClosed = sessionStorage.getItem('thenavigators_popup_closed');
     if (!hasClosed) {
       const timer = setTimeout(() => {
         setIsOpen(true);
@@ -19,7 +19,7 @@ export default function AutoPopupForm() {
 
   const handleClose = () => {
     setIsOpen(false);
-    sessionStorage.setItem('exporio_popup_closed', 'true');
+    sessionStorage.setItem('thenavigators_popup_closed', 'true');
   };
 
   return <InquiryModal isOpen={isOpen} onClose={handleClose} />;

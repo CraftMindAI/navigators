@@ -7,12 +7,12 @@ const HERO_SLIDES = [
   {
     image: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1920&q=80',
     title: 'Explore Majestic Sikkim & Gangtok',
-    subtitle: 'Exporio Holidays - High Altitude Lakes, Snow Passports & Sacred Monasteries',
+    subtitle: 'The Navigators - High Altitude Lakes, Snow Passports & Sacred Monasteries',
   },
   {
     image: 'https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=1920&q=80',
-    title: 'Experience Kashmir Paradise On Earth',
-    subtitle: 'Luxury Houseboats on Dal Lake & Gondola Cable Cars in Gulmarg',
+    title: 'Kashmir: A Love Story in the Mountains',
+    subtitle: 'Honeymoon Special • 4 Nights 5 Days • Starting from ₹11,999/- Per Person',
   },
   {
     image: 'https://images.unsplash.com/photo-1589394815804-964ed0be2eb5?auto=format&fit=crop&w=1920&q=80',
@@ -80,7 +80,7 @@ export default function HeroBanner({ onSearch }: { onSearch?: (destination: stri
         {/* Badge */}
         <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-primaryCyan/20 border border-primaryCyan/40 text-primaryCyan text-[10px] sm:text-xs md:text-sm font-semibold mb-3 sm:mb-4 backdrop-blur-md">
           <Plane className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primaryCyan transform -rotate-45" />
-          <span className="font-extrabold uppercase tracking-widest">EXPORIO HOLIDAYS - TRAVEL BEYOND BORDERS</span>
+          <span className="font-extrabold uppercase tracking-widest">THE NAVIGATORS - TRAVEL THE WORLD</span>
         </div>
 
         <h1 className="text-2xl sm:text-4xl lg:text-6xl font-black tracking-tight text-white mb-3 sm:mb-4 max-w-4xl leading-tight">

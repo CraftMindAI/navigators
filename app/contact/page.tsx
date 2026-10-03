@@ -49,7 +49,7 @@ export default function ContactPage() {
             Get In Touch
           </span>
           <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight mb-3">
-            Contact Exporio Holidays
+            Contact The Navigators
           </h1>
           <p className="text-slate-300 text-sm md:text-base">
             Have questions about tour packages, permits, or custom itineraries? Our travel specialists are available 24/7.
@@ -78,8 +78,8 @@ export default function ContactPage() {
               </div>
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-white">Email Address</h4>
-                <a href="mailto:contact@exporioholidays.com" className="text-[11px] sm:text-xs text-slate-300 hover:text-primaryCyan block mt-1 font-semibold transition-colors">
-                  contact@exporioholidays.com
+                <a href="mailto:contact@thenavigatorsholidays.com" className="text-[11px] sm:text-xs text-slate-300 hover:text-primaryCyan block mt-1 font-semibold transition-colors">
+                  contact@thenavigatorsholidays.com
                 </a>
                 <a href="mailto:contact@etripto.in" className="text-[11px] sm:text-xs text-slate-400 hover:text-primaryCyan block mt-0.5 transition-colors">
                   contact@etripto.in
@@ -121,7 +121,7 @@ export default function ContactPage() {
               <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center space-y-3">
                 <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
                 <h4 className="text-lg font-bold text-emerald-400">Message Received!</h4>
-                <p className="text-xs text-emerald-100">Thank you for reaching out to Exporio Holidays. We will contact you shortly.</p>
+                <p className="text-xs text-emerald-100">Thank you for reaching out to The Navigators. We will contact you shortly.</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">

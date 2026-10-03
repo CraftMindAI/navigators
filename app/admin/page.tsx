@@ -152,7 +152,7 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const session = localStorage.getItem('exporio_admin_session');
+    const session = localStorage.getItem('thenavigators_admin_session');
     if (session === 'true') {
       setIsAuthenticated(true);
       fetchLeads();
@@ -199,7 +199,7 @@ export default function AdminPage() {
         setLoginError(error?.message || 'Invalid email or password.');
       } else {
         setIsAuthenticated(true);
-        localStorage.setItem('exporio_admin_session', 'true');
+        localStorage.setItem('thenavigators_admin_session', 'true');
         fetchLeads();
         fetchAdminTours();
         fetchAdminDestinations();
@@ -212,7 +212,7 @@ export default function AdminPage() {
 
   const handleLogout = () => {
     setIsAuthenticated(false);
-    localStorage.removeItem('exporio_admin_session');
+    localStorage.removeItem('thenavigators_admin_session');
   };
 
   const fetchLeads = async () => {
@@ -443,7 +443,7 @@ export default function AdminPage() {
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primaryCyan to-blue-600 flex items-center justify-center mx-auto mb-3 border border-slate-700 shadow-glow">
               <ShieldAlert className="w-8 h-8 text-navyDark font-extrabold" />
             </div>
-            <h2 className="text-2xl font-black text-white">Exporio Admin Portal</h2>
+            <h2 className="text-2xl font-black text-white">The Navigators Admin Portal</h2>
             <p className="text-xs text-slate-400 mt-1">Sign in with your admin credentials to access leads & packages.</p>
           </div>
 
@@ -461,7 +461,7 @@ export default function AdminPage() {
                 required
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="admin@exporio.com"
+                placeholder="admin@thenavigators.com"
                 className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
               />
             </div>
@@ -488,7 +488,7 @@ export default function AdminPage() {
 
           <div className="mt-6 text-center">
             <Link href="/" className="text-xs text-slate-400 hover:text-primaryCyan">
-              ← Return to Exporio Holidays Main Site
+              ← Return to The Navigators Main Site
             </Link>
           </div>
         </div>
@@ -508,7 +508,7 @@ export default function AdminPage() {
             </Link>
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-7 h-7 text-accentGold" />
-              <h1 className="text-2xl md:text-3xl font-black text-white">Exporio Admin Dashboard</h1>
+              <h1 className="text-2xl md:text-3xl font-black text-white">The Navigators Admin Dashboard</h1>
             </div>
             <p className="text-xs text-slate-400 mt-1">Manage lead inquiries, publish new tour packages, and add tourist places.</p>
           </div>

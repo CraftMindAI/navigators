@@ -15,7 +15,7 @@ const FALLBACK_BLOGS: Blog[] = [
     slug: 'top-10-places-in-sikkim',
     image_url: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=800&q=80',
     content: 'Sikkim is a beautiful destination in Northeast India. \n\nFrom the high-altitude Tsomgo Lake and Nathula Pass to the glass skywalk in Pelling, there is so much to explore. Ensure you book your permits in advance for restricted areas.',
-    author: 'Exporio Travel Team',
+    author: 'The Navigators Travel Team',
     created_at: '2026-02-15T00:00:00.000Z',
   },
   {

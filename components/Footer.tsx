@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, MapPin, Send, CheckCircle2, Facebook, Instagram, Youtube, Plane } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, Facebook, Instagram, Youtube, Plane, Mountain } from 'lucide-react';
 import { subscribeNewsletter } from '@/lib/supabase';
 import { siteConfig } from '@/config/siteConfig';
 
@@ -28,18 +28,15 @@ export default function Footer() {
           {/* Col 1: About */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primaryCyan via-[#ff6b2b] to-[#ff2a00] rounded-xl blur-sm opacity-50 group-hover:opacity-90 transition-opacity duration-300" />
-                <img
-                  src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/exporio-logo.jpeg`}
-                  alt="Exporio Holidays"
-                  className="relative h-12 w-auto rounded-lg object-cover shadow-2xl"
-                />
-              </div>
+              <img
+                src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/logo-dark.svg`}
+                alt="The navigators"
+                className="h-10 sm:h-14 w-auto object-contain hover:opacity-90 transition-opacity"
+              />
             </Link>
 
             <p className="text-xs text-slate-400 leading-relaxed">
-              Exporio Holidays is a leading tour and travel company dedicated to crafting customized holiday experiences across domestic & international destinations including Sikkim, Kashmir, Darjeeling, Kerala, Andaman, Bhutan, Bali, and beyond.
+              The Navigators is a leading tour and travel company dedicated to crafting customized holiday experiences across domestic & international destinations including Sikkim, Kashmir, Darjeeling, Kerala, Andaman, Bhutan, Bali, and beyond.
             </p>
 
             <div className="flex items-center gap-3 pt-2">
@@ -139,7 +136,7 @@ export default function Footer() {
               Travel Beyond Borders!
             </h4>
             <p className="text-xs text-slate-400">
-              Subscribe to Exporio Holidays newsletter to receive exclusive travel deals and itineraries in your inbox.
+              Subscribe to The Navigators newsletter to receive exclusive travel deals and itineraries in your inbox.
             </p>
 
             {subStatus?.success ? (
@@ -180,7 +177,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-6 sm:pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-[11px] sm:text-xs text-slate-500 gap-3 sm:gap-4">
-          <p>© {new Date().getFullYear()} Exporio Holidays. All Rights Reserved.</p>
+          <p>© {new Date().getFullYear()} The Navigators. All Rights Reserved.</p>
           <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 sm:gap-4 text-center">
             <Link href="/" className="hover:text-slate-400">Privacy Policy</Link>
             <Link href="/" className="hover:text-slate-400">Terms & Conditions</Link>

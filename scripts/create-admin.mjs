@@ -18,7 +18,7 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 async function createAdmin() {
-  const email = 'admin@exporio.com';
+  const email = 'admin@thenavigators.com';
   const password = 'admin@123'; // Must be at least 6 chars
 
   console.log(`Creating/Migrating admin user: ${email}`);

@@ -4,7 +4,7 @@ import React from 'react';
 import { siteConfig } from '@/config/siteConfig';
 
 export default function WhatsAppWidget() {
-  const whatsappUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent('Hi Exporio Holidays! I am looking for travel packages & instant quotes.')}`;
+  const whatsappUrl = `https://wa.me/${siteConfig.whatsappNumber}?text=${encodeURIComponent('Hi The Navigators! I am looking for travel packages & instant quotes.')}`;
 
   return (
     <a
@@ -12,7 +12,7 @@ export default function WhatsAppWidget() {
       target="_blank"
       rel="noopener noreferrer"
       className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 group flex items-center gap-3"
-      title="Chat with Exporio Holidays on WhatsApp"
+      title="Chat with The Navigators on WhatsApp"
     >
       {/* Tooltip */}
       <div className="hidden sm:block bg-navyDark/90 backdrop-blur-md text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-xl border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">

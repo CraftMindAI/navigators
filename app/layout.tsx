@@ -6,14 +6,14 @@ import WhatsAppWidget from '@/components/WhatsAppWidget';
 import AutoPopupForm from '@/components/AutoPopupForm';
 
 export const metadata: Metadata = {
-  title: 'Exporio Holidays | Travel Beyond Borders - Best Tour & Travel Packages',
-  description: 'Book custom tour packages with Exporio Holidays - Travel Beyond Borders. Discover premium domestic & international holiday destinations with 24/7 support.',
-  keywords: 'Exporio Holidays, Travel Beyond Borders, Sikkim tour package, Kashmir packages, Kerala houseboat, Darjeeling tour, Andaman holiday, Bhutan travel',
+  title: 'The Navigators | Travel Beyond Borders - Best Tour & Travel Packages',
+  description: 'Book custom tour packages with The Navigators - Travel Beyond Borders. Discover premium domestic & international holiday destinations with 24/7 support.',
+  keywords: 'The Navigators, Travel Beyond Borders, Sikkim tour package, Kashmir packages, Kerala houseboat, Darjeeling tour, Andaman holiday, Bhutan travel',
   openGraph: {
-    title: 'Exporio Holidays | Travel Beyond Borders',
+    title: 'The Navigators | Travel Beyond Borders',
     description: 'Explore handpicked tour packages across India and international destinations with 24/7 customer support.',
-    url: 'https://exporioholidays.com',
-    siteName: 'Exporio Holidays',
+    url: 'https://thenavigatorsholidays.com',
+    siteName: 'The Navigators',
     locale: 'en_IN',
     type: 'website',
   },
