@@ -2,13 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import {
-  Compass,
-  ChevronLeft,
-  ChevronRight,
-  ArrowRight,
-  Calendar
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsRight, Calendar } from 'lucide-react';
+import SectionTitle from '@/components/SectionTitle';
 import { getDestinations } from '@/lib/supabase';
 import { Destination } from '@/types';
 
@@ -85,110 +80,82 @@ export default function PopularDestinations() {
   };
 
   return (
-    <section className="py-16 sm:py-20 relative overflow-hidden bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
+    <section className="py-12 bg-white text-brand-ink text-sm">
+      <div className="container-bb">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 gap-6">
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 text-brand-orange uppercase font-bold tracking-widest text-xs mb-2">
-              <Compass className="w-3.5 h-3.5" />
-              Curated Travel Horizons
-            </span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight leading-tight">
-              Iconic Escapes & Destinations
-            </h2>
-            <span className="block w-14 h-1 bg-brand-orange rounded-full mt-3" />
-            <p className="text-slate-600 text-sm sm:text-base mt-3">
-              Immerse yourself in handpicked sanctuaries across snow-clad mountain passes, serene backwaters, and pristine tropical archipelagos.
-            </p>
-          </div>
-
-          {/* Carousel Arrows */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => scroll('left')}
-              className="w-11 h-11 rounded-full bg-white hover:bg-brand-orange hover:text-white hover:border-brand-orange border border-brand-line text-brand-navy shadow-soft flex items-center justify-center transition-all duration-200 active:scale-95"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="w-11 h-11 rounded-full bg-white hover:bg-brand-orange hover:text-white hover:border-brand-orange border border-brand-line text-brand-navy shadow-soft flex items-center justify-center transition-all duration-200 active:scale-95"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <SectionTitle
+          light="Iconic Escapes &"
+          bold="Destinations"
+          subtitle="Immerse yourself in handpicked sanctuaries across snow-clad mountain passes, serene backwaters, and pristine tropical archipelagos."
+        />
 
         {/* Loading Spinner */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-8 h-8 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          /* Horizontal Destination Showcase */
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-5 sm:gap-6 overflow-x-auto pb-4 pt-1 snap-x snap-mandatory scroll-smooth no-scrollbar"
-          >
-            {destinations.map((dest) => {
-              const meta = DESTINATION_META[dest.slug];
-              return (
-                <div
-                  key={dest.id}
-                  className="min-w-[280px] sm:min-w-[320px] md:min-w-[340px] snap-start shrink-0"
-                >
-                  <Link
-                    href={`/location/${dest.slug}`}
-                    className="group relative h-full rounded-xl overflow-hidden flex flex-col bg-white border border-brand-line hover:border-brand-orange/50 transition-all duration-300 shadow-soft hover:shadow-widget"
-                  >
-                    {/* Destination Image */}
-                    <div className="relative h-56 sm:h-60 overflow-hidden">
-                      <img
-                        src={dest.imageUrl}
-                        alt={dest.name}
-                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          <div className="relative">
+            {/* Carousel Arrows */}
+            <button
+              onClick={() => scroll('left')}
+              className="hidden md:flex absolute -left-5 top-[95px] z-10 w-10 h-10 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] items-center justify-center text-brand-blue"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
-                      {/* Top Chips */}
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-navy bg-white px-3 py-1 rounded-full shadow-soft flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-brand-orange" />
-                          <span>{meta?.season || 'Best Season'}</span>
-                        </span>
-
-                        <span className="text-[10px] font-bold text-white bg-brand-orange px-2.5 py-1 rounded-full shadow-soft">
+            {/* Horizontal Destination Showcase */}
+            <div
+              ref={scrollContainerRef}
+              className="flex gap-[30px] overflow-x-auto pb-2 pt-1 px-[2px] snap-x snap-mandatory scroll-smooth no-scrollbar"
+            >
+              {destinations.map((dest) => {
+                const meta = DESTINATION_META[dest.slug];
+                return (
+                  <div key={dest.id} className="w-[85%] sm:w-[calc(50%-15px)] lg:w-[calc(25%-23px)] snap-start shrink-0">
+                    <Link
+                      href={`/location/${dest.slug}`}
+                      className="group h-full flex flex-col bg-white shadow-[0_1px_4px_rgba(0,0,0,0.12)] border-b-2 border-brand-blue"
+                    >
+                      {/* Destination Image */}
+                      <div className="relative h-[190px] overflow-hidden">
+                        <img
+                          src={dest.imageUrl}
+                          alt={dest.name}
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <span className="absolute top-5 right-0 bg-brand-blue text-white text-[13px] font-medium px-2.5 py-1">
                           {dest.packageCount || 4}+ Tours
                         </span>
                       </div>
 
-                      <h3 className="absolute bottom-3 left-4 right-4 z-10 text-xl sm:text-2xl font-extrabold text-white leading-tight drop-shadow">
-                        {dest.name}
-                      </h3>
-                    </div>
-
-                    {/* Card Body */}
-                    <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
-                      <span className="text-[11px] font-bold text-brand-orangeDark tracking-widest uppercase block mb-3">
-                        {meta?.vibe || 'Curated Escape'}
-                      </span>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-brand-line text-xs font-semibold text-brand-blue">
-                        <span className="group-hover:text-brand-orange transition-colors">
-                          Explore Custom Itineraries
+                      {/* Card Body */}
+                      <div className="px-2.5 pt-2.5 pb-2.5 flex-1 flex flex-col">
+                        <h3 className="text-sm font-medium text-brand-ink leading-snug group-hover:text-brand-blue">{dest.name}</h3>
+                        <span className="text-[13px] text-brand-muted mt-0.5">{meta?.vibe || 'Curated Escape'}</span>
+                        <span className="flex items-center gap-1 text-[13px] text-brand-muted mt-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-brand-orange" strokeWidth={1.5} />
+                          {meta?.season || 'Best Season'}
                         </span>
-                        <div className="w-8 h-8 rounded-full bg-brand-orangeLight text-brand-orange group-hover:bg-brand-orange group-hover:text-white flex items-center justify-center transition-all duration-300 transform group-hover:translate-x-1">
-                          <ArrowRight className="w-4 h-4" />
-                        </div>
+
+                        <span className="mt-auto pt-2 inline-flex items-center gap-1 text-[13px] font-medium text-brand-blue group-hover:underline">
+                          Explore Custom Itineraries <ChevronsRight className="w-3.5 h-3.5" />
+                        </span>
                       </div>
-                    </div>
-                  </Link>
-                </div>
-              );
-            })}
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => scroll('right')}
+              className="hidden md:flex absolute -right-5 top-[95px] z-10 w-10 h-10 rounded-full bg-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] items-center justify-center text-brand-blue"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         )}
       </div>
