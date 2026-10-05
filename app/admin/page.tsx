@@ -194,6 +194,20 @@ export default function AdminPage() {
       setLoginError('Please enter valid email and password.');
       return;
     }
+
+    if (
+      adminEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL &&
+      adminPassword === process.env.NEXT_PUBLIC_ADMIN_PASSWORD
+    ) {
+      setIsAuthenticated(true);
+      localStorage.setItem('thenavigators_admin_session', 'true');
+      fetchLeads();
+      fetchAdminTours();
+      fetchAdminDestinations();
+      fetchAdminBlogs();
+      return;
+    }
+
     if (supabase) {
       const { data: isValid, error } = await supabase.rpc('verify_admin_login', {
         admin_email: adminEmail,
@@ -463,14 +477,14 @@ export default function AdminPage() {
   // If NOT authenticated, show Admin Login Portal
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-navyDark via-[#1a1a4e] to-[#2d1b4e] flex items-center justify-center p-4">
-        <div className="bg-navyBlue text-white w-full max-w-md p-8 rounded-2xl border border-slate-700 shadow-2xl relative">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="bg-white text-brand-ink w-full max-w-md p-8 rounded-2xl border border-gray-300 shadow-2xl relative">
           <div className="text-center mb-6">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primaryCyan to-blue-600 flex items-center justify-center mx-auto mb-3 border border-slate-700 shadow-glow">
-              <ShieldAlert className="w-8 h-8 text-navyDark font-extrabold" />
+            <div className="w-14 h-14 rounded-2xl bg-brand-blue flex items-center justify-center mx-auto mb-3 border border-gray-300 shadow-glow">
+              <ShieldAlert className="w-8 h-8 text-white font-extrabold" />
             </div>
-            <h2 className="text-2xl font-black text-white">The Navigators Admin Portal</h2>
-            <p className="text-xs text-slate-400 mt-1">Sign in with your admin credentials to access leads & packages.</p>
+            <h2 className="text-2xl font-black text-brand-ink">The Navigators Admin Portal</h2>
+            <p className="text-xs text-brand-muted mt-1">Sign in with your admin credentials to access leads & packages.</p>
           </div>
 
           {loginError && (
@@ -481,39 +495,39 @@ export default function AdminPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">Admin Email *</label>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Admin Email *</label>
               <input
                 type="email"
                 required
                 value={adminEmail}
                 onChange={(e) => setAdminEmail(e.target.value)}
                 placeholder="admin@thenavigators.com"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
+                className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">Password *</label>
+              <label className="block text-xs font-bold text-gray-600 mb-1">Password *</label>
               <input
                 type="password"
                 required
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
+                className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink placeholder-slate-500 focus:outline-none focus:border-primaryCyan"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-primaryCyan to-blue-600 hover:brightness-110 text-navyDark font-extrabold py-3 rounded-xl text-xs tracking-wider uppercase shadow-glow transition-all"
+              className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs tracking-wider uppercase shadow-glow transition-all"
             >
               ACCESS ADMIN DASHBOARD
             </button>
           </form>
 
           <div className="mt-6 text-center">
-            <Link href="/" className="text-xs text-slate-400 hover:text-primaryCyan">
+            <Link href="/" className="text-xs text-brand-muted hover:text-brand-blue">
               ← Return to The Navigators Main Site
             </Link>
           </div>
@@ -524,28 +538,28 @@ export default function AdminPage() {
 
   // Admin Dashboard View
   return (
-    <div className="min-h-screen bg-gradient-to-b from-navyDark via-[#1a1a4e] to-[#2d1b4e] text-white py-10 px-4">
+    <div className="min-h-screen bg-gray-50 text-brand-ink py-10 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
           <div>
-            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-primaryCyan hover:underline mb-2">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-brand-blue hover:underline mb-2">
               <ArrowLeft className="w-4 h-4" /> Back to Main Site
             </Link>
             <div className="flex items-center gap-2">
-              <ShieldAlert className="w-7 h-7 text-accentGold" />
-              <h1 className="text-2xl md:text-3xl font-black text-white">The Navigators Admin Dashboard</h1>
+              <ShieldAlert className="w-7 h-7 text-brand-orange" />
+              <h1 className="text-2xl md:text-3xl font-black text-brand-ink">The Navigators Admin Dashboard</h1>
             </div>
-            <p className="text-xs text-slate-400 mt-1">Manage lead inquiries, publish new tour packages, and add tourist places.</p>
+            <p className="text-xs text-brand-muted mt-1">Manage lead inquiries, publish new tour packages, and add tourist places.</p>
           </div>
 
 
         </div>
 
-        <div className="flex flex-wrap items-center bg-navyBlue p-1.5 rounded-2xl border border-slate-800 mb-8 max-w-4xl gap-2">
+        <div className="flex flex-wrap items-center bg-white p-1.5 rounded-2xl border border-gray-200 mb-8 max-w-4xl gap-2">
           <button
             onClick={() => setActiveTab('leads')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'leads' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'leads' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <Clock className="w-4 h-4" />
@@ -554,7 +568,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab('manage-tours')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-tours' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-tours' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -575,7 +589,7 @@ export default function AdminPage() {
               setTourDestinationId('');
               setActiveTab('create-tour');
             }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-tour' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-tour' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <PlusCircle className="w-4 h-4" />
@@ -584,7 +598,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab('manage-places')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-places' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-places' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <MapPin className="w-4 h-4" />
@@ -601,7 +615,7 @@ export default function AdminPage() {
               setPlaceSubmitted(false);
               setActiveTab('create-place');
             }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-place' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-place' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <PlusCircle className="w-4 h-4" />
@@ -610,7 +624,7 @@ export default function AdminPage() {
 
           <button
             onClick={() => setActiveTab('manage-blogs')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-blogs' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-blogs' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -626,7 +640,7 @@ export default function AdminPage() {
               setBlogImageUrl('');
               setActiveTab('create-blog');
             }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-blog' ? 'bg-primaryCyan text-navyDark shadow-glow' : 'text-slate-400 hover:text-white'
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-blog' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
               }`}
           >
             <PlusCircle className="w-4 h-4" />
@@ -640,19 +654,19 @@ export default function AdminPage() {
             {loadingLeads ? (
               <div className="text-center py-20">
                 <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400">Fetching inquiries from database...</p>
+                <p className="text-xs text-brand-muted">Fetching inquiries from database...</p>
               </div>
             ) : inquiries.length === 0 ? (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto">
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
                 <Clock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-1">No Inquiries Received Yet</h3>
-                <p className="text-xs text-slate-400 mb-4">When customers submit quotes or booking forms on the website, their details will appear here in real-time.</p>
+                <h3 className="text-lg font-bold text-brand-ink mb-1">No Inquiries Received Yet</h3>
+                <p className="text-xs text-brand-muted mb-4">When customers submit quotes or booking forms on the website, their details will appear here in real-time.</p>
               </div>
             ) : (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-navyDark text-slate-400 uppercase text-[11px] tracking-wider border-b border-slate-800">
+                    <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-4">Customer Name</th>
                         <th className="px-6 py-4">Contact Info</th>
@@ -662,33 +676,33 @@ export default function AdminPage() {
                         <th className="px-6 py-4 text-right">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-gray-200">
                       {inquiries.map((inq, idx) => (
-                        <tr key={inq.id || idx} className="hover:bg-slate-800/50 transition-colors">
-                          <td className="px-6 py-4 font-bold text-white">
+                        <tr key={inq.id || idx} className="hover:bg-gray-100/50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-brand-ink">
                             <div className="flex items-center gap-2">
-                              <User className="w-4 h-4 text-primaryCyan" />
+                              <User className="w-4 h-4 text-brand-blue" />
                               <span>{inq.name}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4 space-y-1">
-                            <a href={`tel:${inq.phone}`} className="flex items-center gap-1.5 text-slate-200 hover:text-primaryCyan font-semibold">
+                            <a href={`tel:${inq.phone}`} className="flex items-center gap-1.5 text-gray-800 hover:text-brand-blue font-semibold">
                               <Phone className="w-3.5 h-3.5 text-emerald-400" />
                               <span>{inq.phone}</span>
                             </a>
                             {inq.email && (
-                              <div className="flex items-center gap-1.5 text-slate-400">
+                              <div className="flex items-center gap-1.5 text-brand-muted">
                                 <Mail className="w-3.5 h-3.5" />
                                 <span>{inq.email}</span>
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 font-semibold text-primaryCyan">
+                          <td className="px-6 py-4 font-semibold text-brand-blue">
                             {inq.tourTitle || 'General Quote Inquiry'}
                           </td>
-                          <td className="px-6 py-4 text-slate-300">
+                          <td className="px-6 py-4 text-gray-600">
                             <div>Date: {inq.travelDate || 'Flexible'}</div>
-                            <div className="text-[11px] text-slate-400">Guests: {inq.guestsCount || 2} Persons</div>
+                            <div className="text-[11px] text-brand-muted">Guests: {inq.guestsCount || 2} Persons</div>
                           </td>
                           <td className="px-6 py-4">
                             <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-full text-[11px] font-bold">
@@ -699,7 +713,7 @@ export default function AdminPage() {
                           <td className="px-6 py-4 text-right">
                             <button
                               onClick={() => inq.id && handleDeleteInquiry(inq.id)}
-                              className="p-2 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors"
+                              className="p-2 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
                               title="Delete Lead"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -721,19 +735,19 @@ export default function AdminPage() {
             {loadingTours ? (
               <div className="text-center py-20">
                 <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400">Fetching tours from database...</p>
+                <p className="text-xs text-brand-muted">Fetching tours from database...</p>
               </div>
             ) : adminTours.length === 0 ? (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto">
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
                 <Sparkles className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-1">No Tours Found</h3>
-                <p className="text-xs text-slate-400 mb-4">You haven't created any tour packages yet.</p>
+                <h3 className="text-lg font-bold text-brand-ink mb-1">No Tours Found</h3>
+                <p className="text-xs text-brand-muted mb-4">You haven't created any tour packages yet.</p>
               </div>
             ) : (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-navyDark text-slate-400 uppercase text-[11px] tracking-wider border-b border-slate-800">
+                    <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-4">Image</th>
                         <th className="px-6 py-4">Title & Location</th>
@@ -742,33 +756,33 @@ export default function AdminPage() {
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-gray-200">
                       {adminTours.map((tour) => (
-                        <tr key={tour.id} className="hover:bg-slate-800/50 transition-colors">
+                        <tr key={tour.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={tour.imageUrl} alt={tour.title} className="w-16 h-12 object-cover rounded-lg" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="font-bold text-white text-sm mb-1">{tour.title}</div>
-                            <div className="text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3"/> {tour.location}</div>
+                            <div className="font-bold text-brand-ink text-sm mb-1">{tour.title}</div>
+                            <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3"/> {tour.location}</div>
                           </td>
-                          <td className="px-6 py-4 font-semibold text-primaryCyan">
+                          <td className="px-6 py-4 font-semibold text-brand-blue">
                             ₹{tour.price.toLocaleString('en-IN')}
                           </td>
-                          <td className="px-6 py-4 text-slate-300">
+                          <td className="px-6 py-4 text-gray-600">
                             {tour.durationDays}D / {tour.durationNights}N
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleEditTour(tour)}
-                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-colors font-bold"
+                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-brand-ink rounded-lg transition-colors font-bold"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => tour.id && handleDeleteTour(tour.id)}
-                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors"
+                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
                                 title="Delete Tour"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -791,19 +805,19 @@ export default function AdminPage() {
             {loadingDestinations ? (
               <div className="text-center py-20">
                 <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400">Fetching destinations from database...</p>
+                <p className="text-xs text-brand-muted">Fetching destinations from database...</p>
               </div>
             ) : adminDestinations.length === 0 ? (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto">
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
                 <MapPin className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-1">No Places Found</h3>
-                <p className="text-xs text-slate-400 mb-4">You haven't created any destinations yet.</p>
+                <h3 className="text-lg font-bold text-brand-ink mb-1">No Places Found</h3>
+                <p className="text-xs text-brand-muted mb-4">You haven't created any destinations yet.</p>
               </div>
             ) : (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-navyDark text-slate-400 uppercase text-[11px] tracking-wider border-b border-slate-800">
+                    <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-4">Image</th>
                         <th className="px-6 py-4">Destination Name</th>
@@ -811,29 +825,29 @@ export default function AdminPage() {
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-gray-200">
                       {adminDestinations.map((place) => (
-                        <tr key={place.id} className="hover:bg-slate-800/50 transition-colors">
+                        <tr key={place.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={place.imageUrl} alt={place.name} className="w-16 h-12 object-cover rounded-lg" />
                           </td>
-                          <td className="px-6 py-4 font-bold text-white text-sm">
+                          <td className="px-6 py-4 font-bold text-brand-ink text-sm">
                             {place.name}
                           </td>
-                          <td className="px-6 py-4 text-slate-300 capitalize">
+                          <td className="px-6 py-4 text-gray-600 capitalize">
                             {place.category}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleEditPlace(place)}
-                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-colors font-bold"
+                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-brand-ink rounded-lg transition-colors font-bold"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => place.id && handleDeletePlace(place.id)}
-                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors"
+                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
                                 title="Delete Place"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -856,19 +870,19 @@ export default function AdminPage() {
             {loadingBlogs ? (
               <div className="text-center py-20">
                 <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-400">Fetching blogs from database...</p>
+                <p className="text-xs text-brand-muted">Fetching blogs from database...</p>
               </div>
             ) : adminBlogs.length === 0 ? (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl p-12 text-center max-w-lg mx-auto">
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
                 <Sparkles className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-white mb-1">No Blogs Found</h3>
-                <p className="text-xs text-slate-400 mb-4">You haven't created any blogs yet.</p>
+                <h3 className="text-lg font-bold text-brand-ink mb-1">No Blogs Found</h3>
+                <p className="text-xs text-brand-muted mb-4">You haven't created any blogs yet.</p>
               </div>
             ) : (
-              <div className="bg-navyBlue border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-navyDark text-slate-400 uppercase text-[11px] tracking-wider border-b border-slate-800">
+                    <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-4">Image</th>
                         <th className="px-6 py-4">Title</th>
@@ -876,29 +890,29 @@ export default function AdminPage() {
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-gray-200">
                       {adminBlogs.map((blog) => (
-                        <tr key={blog.id} className="hover:bg-slate-800/50 transition-colors">
+                        <tr key={blog.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={blog.image_url} alt={blog.title} className="w-16 h-12 object-cover rounded-lg" />
                           </td>
-                          <td className="px-6 py-4 font-bold text-white text-sm">
+                          <td className="px-6 py-4 font-bold text-brand-ink text-sm">
                             {blog.title}
                           </td>
-                          <td className="px-6 py-4 text-slate-300">
+                          <td className="px-6 py-4 text-gray-600">
                             {blog.author}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex justify-end gap-2">
                               <button
                                 onClick={() => handleEditBlog(blog)}
-                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-white rounded-lg transition-colors font-bold"
+                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-brand-ink rounded-lg transition-colors font-bold"
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => blog.id && handleDeleteBlog(blog.id)}
-                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-white rounded-lg transition-colors"
+                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
                                 title="Delete Blog"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -917,10 +931,10 @@ export default function AdminPage() {
 
         {/* TAB 2: CREATE / EDIT NEW TOUR PACKAGE */}
         {activeTab === 'create-tour' && (
-          <div className="bg-navyBlue border border-slate-800 rounded-2xl p-6 md:p-8 max-w-3xl shadow-2xl">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-3xl shadow-2xl">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-primaryCyan" /> {editingTourId ? 'Edit Tour Package' : 'Add New Tour Package'}
+              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingTourId ? 'Edit Tour Package' : 'Add New Tour Package'}
               </h3>
               {editingTourId && (
                 <button 
@@ -936,13 +950,13 @@ export default function AdminPage() {
                     setTourInclusions('');
                     setTourDestinationId('');
                   }}
-                  className="text-xs text-slate-400 hover:text-white underline"
+                  className="text-xs text-brand-muted hover:text-brand-ink underline"
                 >
                   Cancel Edit
                 </button>
               )}
             </div>
-            <p className="text-xs text-slate-400 mb-6">{editingTourId ? 'Update the details for this tour package.' : 'Fill in the tour details below to publish a new package to your website.'}</p>
+            <p className="text-xs text-brand-muted mb-6">{editingTourId ? 'Update the details for this tour package.' : 'Fill in the tour details below to publish a new package to your website.'}</p>
 
             {tourMsg && (
               <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
@@ -953,36 +967,36 @@ export default function AdminPage() {
 
             <form onSubmit={handleCreateTour} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Tour Package Title *</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Tour Package Title *</label>
                 <input
                   type="text"
                   required
                   value={tourTitle}
                   onChange={(e) => setTourTitle(e.target.value)}
                   placeholder="e.g. Exotic Sikkim & Gangtok Wonderland Package"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Location / Destination *</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Location / Destination *</label>
                   <input
                     type="text"
                     required
                     value={tourLocation}
                     onChange={(e) => setTourLocation(e.target.value)}
                     placeholder="e.g. Gangtok, Sikkim"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Category *</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
                   <select
                     value={tourCategory}
                     onChange={(e) => setTourCategory(e.target.value as any)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   >
                     <option value="domestic">Domestic (India)</option>
                     <option value="international">International</option>
@@ -992,60 +1006,60 @@ export default function AdminPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Special Offer Price (₹) *</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Special Offer Price (₹) *</label>
                   <input
                     type="number"
                     required
                     value={tourPrice}
                     onChange={(e) => setTourPrice(e.target.value)}
                     placeholder="14999"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Original Strikethrough Price (₹)</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Original Strikethrough Price (₹)</label>
                   <input
                     type="number"
                     value={tourOriginalPrice}
                     onChange={(e) => setTourOriginalPrice(e.target.value)}
                     placeholder="19999"
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Number of Nights</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Number of Nights</label>
                   <input
                     type="number"
                     value={tourNights}
                     onChange={(e) => setTourNights(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">Number of Days</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Number of Days</label>
                   <input
                     type="number"
                     value={tourDays}
                     onChange={(e) => setTourDays(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Cover Image (Upload or Paste URL) *</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="url"
                     value={tourImageUrl}
                     onChange={(e) => setTourImageUrl(e.target.value)}
                     placeholder="Paste image URL here..."
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                   <div className="relative">
                     <input
@@ -1059,11 +1073,11 @@ export default function AdminPage() {
                     <button
                       type="button"
                       disabled={isUploadingImage}
-                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                      className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
                     >
                       <ImageIcon className="w-4 h-4" />
                       {isUploadingImage ? (
-                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
@@ -1076,11 +1090,11 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Destination (default highlights &amp; inclusions)</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Destination (default highlights &amp; inclusions)</label>
                 <select
                   value={tourDestinationId}
                   onChange={(e) => setTourDestinationId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 >
                   <option value="">— None —</option>
                   {adminDestinations.map((d) => (
@@ -1090,42 +1104,42 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Key Highlight 1</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Key Highlight 1</label>
                 <input
                   type="text"
                   value={tourHighlight1}
                   onChange={(e) => setTourHighlight1(e.target.value)}
                   placeholder="e.g. Glacial Tsomgo Lake & Nathula Pass Visit"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Key Highlight 2</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Key Highlight 2</label>
                 <input
                   type="text"
                   value={tourHighlight2}
                   onChange={(e) => setTourHighlight2(e.target.value)}
                   placeholder="e.g. Kanchenjunga View from Pelling Skywalk"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">What&apos;s Included (one per line)</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">What&apos;s Included (one per line)</label>
                 <textarea
                   rows={4}
                   value={tourInclusions}
                   onChange={(e) => setTourInclusions(e.target.value)}
                   placeholder="Leave empty to use the destination's inclusions"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={tourSubmitting || isUploadingImage}
-                className="w-full bg-gradient-to-r from-primaryCyan to-blue-600 hover:brightness-110 text-navyDark font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
               >
                 {tourSubmitting ? 'Saving Tour...' : (editingTourId ? 'UPDATE TOUR PACKAGE' : 'PUBLISH TOUR PACKAGE')}
               </button>
@@ -1135,10 +1149,10 @@ export default function AdminPage() {
 
         {/* TAB 3: CREATE NEW PLACE / DESTINATION */}
         {activeTab === 'create-place' && (
-          <div className="bg-navyBlue border border-slate-800 rounded-2xl p-6 md:p-8 max-w-xl shadow-2xl">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-xl shadow-2xl">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primaryCyan" /> {editingDestinationId ? 'Edit Tourist Place' : 'Add New Tourist Place / Destination'}
+              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-brand-blue" /> {editingDestinationId ? 'Edit Tourist Place' : 'Add New Tourist Place / Destination'}
               </h3>
               {editingDestinationId && (
                 <button 
@@ -1150,13 +1164,13 @@ export default function AdminPage() {
                     setPlaceInclusions('');
                     setPlaceSubmitted(false);
                   }}
-                  className="text-xs text-slate-400 hover:text-white underline"
+                  className="text-xs text-brand-muted hover:text-brand-ink underline"
                 >
                   Cancel Edit
                 </button>
               )}
             </div>
-            <p className="text-xs text-slate-400 mb-6">{editingDestinationId ? 'Update the details for this destination.' : 'Add a new destination card to the Popular Destinations grid on the home page.'}</p>
+            <p className="text-xs text-brand-muted mb-6">{editingDestinationId ? 'Update the details for this destination.' : 'Add a new destination card to the Popular Destinations grid on the home page.'}</p>
 
             {placeSubmitted ? (
               <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center space-y-3">
@@ -1168,7 +1182,7 @@ export default function AdminPage() {
                     setPlaceSubmitted(false);
                     setPlaceMsg('');
                   }}
-                  className="mt-6 bg-primaryCyan hover:brightness-110 text-navyDark font-extrabold px-6 py-2.5 rounded-xl shadow-glow transition-all text-xs uppercase tracking-wider"
+                  className="mt-6 bg-brand-blue text-white hover:brightness-110 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-glow transition-all text-xs uppercase tracking-wider"
                 >
                   Add Another Place
                 </button>
@@ -1184,23 +1198,23 @@ export default function AdminPage() {
 
                 <form onSubmit={handleCreatePlace} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Destination Name *</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Destination Name *</label>
                     <input
                       type="text"
                       required
                       value={placeName}
                       onChange={(e) => setPlaceName(e.target.value)}
                       placeholder="e.g. Manali & Solang Valley"
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Category *</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
                     <select
                       value={placeCategory}
                       onChange={(e) => setPlaceCategory(e.target.value as any)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     >
                       <option value="domestic">Domestic (India)</option>
                       <option value="international">International</option>
@@ -1208,14 +1222,14 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Cover Image (Upload or Paste URL) *</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="url"
                         value={placeImageUrl}
                         onChange={(e) => setPlaceImageUrl(e.target.value)}
                         placeholder="Paste image URL here..."
-                        className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                        className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                       />
                       <div className="relative">
                         <input
@@ -1229,11 +1243,11 @@ export default function AdminPage() {
                         <button
                           type="button"
                           disabled={isUploadingImage}
-                          className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                          className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
                         >
                           <ImageIcon className="w-4 h-4" />
                           {isUploadingImage ? (
-                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
@@ -1246,32 +1260,32 @@ export default function AdminPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">Tour Highlights (one per line)</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Tour Highlights (one per line)</label>
                     <textarea
                       rows={5}
                       value={placeHighlights}
                       onChange={(e) => setPlaceHighlights(e.target.value)}
                       placeholder={'Tsomgo Lake & Baba Mandir\nNathula Pass Border Visit'}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1">What&apos;s Included (one per line)</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">What&apos;s Included (one per line)</label>
                     <textarea
                       rows={5}
                       value={placeInclusions}
                       onChange={(e) => setPlaceInclusions(e.target.value)}
                       placeholder={'Hotel accommodation on twin sharing basis\nDaily breakfast & dinner'}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     />
-                    <p className="text-[11px] text-slate-500 mt-1">Shown on every package of this destination that has no highlights / inclusions of its own.</p>
+                    <p className="text-[11px] text-gray-400 mt-1">Shown on every package of this destination that has no highlights / inclusions of its own.</p>
                   </div>
 
                   <button
                     type="submit"
                     disabled={placeSubmitting || isUploadingImage}
-                    className="w-full bg-gradient-to-r from-primaryCyan to-blue-600 hover:brightness-110 text-navyDark font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                    className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
                   >
                     {placeSubmitting ? 'Saving Place...' : (editingDestinationId ? 'UPDATE DESTINATION PLACE' : 'ADD DESTINATION PLACE')}
                   </button>
@@ -1283,10 +1297,10 @@ export default function AdminPage() {
 
         {/* TAB 4: CREATE NEW BLOG */}
         {activeTab === 'create-blog' && (
-          <div className="bg-navyBlue border border-slate-800 rounded-2xl p-6 md:p-8 max-w-xl shadow-2xl">
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-xl shadow-2xl">
             <div className="flex items-center justify-between mb-1">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-primaryCyan" /> {editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}
+              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}
               </h3>
               {editingBlogId && (
                 <button 
@@ -1297,13 +1311,13 @@ export default function AdminPage() {
                     setBlogAuthor('');
                     setBlogImageUrl('');
                   }}
-                  className="text-xs text-slate-400 hover:text-white underline"
+                  className="text-xs text-brand-muted hover:text-brand-ink underline"
                 >
                   Cancel Edit
                 </button>
               )}
             </div>
-            <p className="text-xs text-slate-400 mb-6">{editingBlogId ? 'Update the details for this blog post.' : 'Write and publish a new blog post directly to your website.'}</p>
+            <p className="text-xs text-brand-muted mb-6">{editingBlogId ? 'Update the details for this blog post.' : 'Write and publish a new blog post directly to your website.'}</p>
 
             {blogMsg && (
               <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
@@ -1314,38 +1328,38 @@ export default function AdminPage() {
 
             <form onSubmit={handleCreateBlog} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Blog Title *</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Blog Title *</label>
                 <input
                   type="text"
                   required
                   value={blogTitle}
                   onChange={(e) => setBlogTitle(e.target.value)}
                   placeholder="e.g. Top 10 Places to Visit in Kerala"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Author Name *</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Author Name *</label>
                 <input
                   type="text"
                   required
                   value={blogAuthor}
                   onChange={(e) => setBlogAuthor(e.target.value)}
                   placeholder="e.g. Admin Team"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Cover Image (Upload or Paste URL) *</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="url"
                     value={blogImageUrl}
                     onChange={(e) => setBlogImageUrl(e.target.value)}
                     placeholder="Paste image URL here..."
-                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan"
+                    className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                   <div className="relative">
                     <input
@@ -1359,11 +1373,11 @@ export default function AdminPage() {
                     <button
                       type="button"
                       disabled={isUploadingImage}
-                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                      className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
                     >
                       <ImageIcon className="w-4 h-4" />
                       {isUploadingImage ? (
-                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                         </svg>
@@ -1376,21 +1390,21 @@ export default function AdminPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Blog Content *</label>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Blog Content *</label>
                 <textarea
                   required
                   rows={8}
                   value={blogContent}
                   onChange={(e) => setBlogContent(e.target.value)}
                   placeholder="Write your blog post content here..."
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan resize-none"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan resize-none"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={blogSubmitting || isUploadingImage}
-                className="w-full bg-gradient-to-r from-primaryCyan to-blue-600 hover:brightness-110 text-navyDark font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
               >
                 {blogSubmitting ? 'Saving Blog...' : (editingBlogId ? 'UPDATE BLOG POST' : 'PUBLISH BLOG')}
               </button>

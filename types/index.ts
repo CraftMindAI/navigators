@@ -26,6 +26,7 @@ export interface TourPackage {
 }
 
 export interface Inquiry {
+  userId?: string;
   id?: string;
   name: string;
   email: string;
@@ -70,4 +71,54 @@ export interface Review {
   tourName: string;
   date: string;
   avatarUrl?: string;
+}
+
+export interface UserProfile {
+  id: string;
+  full_name?: string;
+  phone?: string;
+  avatar_url?: string;
+  updated_at?: string;
+}
+
+export interface CartItem {
+  id: string;
+  user_id: string;
+  tour_id: string;
+  tour_title: string;
+  guests_count: number;
+  travel_date?: string;
+  created_at?: string;
+}
+
+export interface HotelBooking {
+  id?: string;
+  user_id?: string;
+  customer_name: string;
+  customer_email?: string;
+  customer_phone: string;
+  destination: string;
+  check_in_date?: string;
+  check_out_date?: string;
+  guests_count?: number;
+  rooms_count?: number;
+  special_requests?: string;
+  status?: 'pending' | 'contacted' | 'confirmed' | 'cancelled';
+  created_at?: string;
+}
+
+export interface FlightBooking {
+  id?: string;
+  user_id?: string;
+  customer_name: string;
+  customer_email?: string;
+  customer_phone: string;
+  departure_city: string;
+  arrival_city: string;
+  departure_date: string;
+  return_date?: string;
+  passengers_count?: number;
+  flight_class?: string;
+  status?: 'pending' | 'contacted' | 'confirmed' | 'cancelled';
+  created_at?: string;
 }
