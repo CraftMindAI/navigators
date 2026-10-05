@@ -7,8 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowRight,
-  MapPin,
-  Sparkles,
   Calendar
 } from 'lucide-react';
 import { getDestinations } from '@/lib/supabase';
@@ -87,24 +85,20 @@ export default function PopularDestinations() {
   };
 
   return (
-    <section className="py-20 sm:py-24 relative overflow-hidden bg-midnight">
-      {/* Ambient background glow */}
-      <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-primaryCyan/5 rounded-full blur-[140px] pointer-events-none" />
-
+    <section className="py-16 sm:py-20 relative overflow-hidden bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-12 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 sm:mb-10 gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-xs font-semibold mb-3">
-              <Compass className="w-3.5 h-3.5 text-primaryCyan" />
-              <span className="gold-gradient-text uppercase font-bold tracking-widest text-[11px]">
-                Curated Travel Horizons
-              </span>
-            </div>
-            <h2 className="editorial-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight">
+            <span className="inline-flex items-center gap-1.5 text-brand-orange uppercase font-bold tracking-widest text-xs mb-2">
+              <Compass className="w-3.5 h-3.5" />
+              Curated Travel Horizons
+            </span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-brand-navy tracking-tight leading-tight">
               Iconic Escapes & Destinations
             </h2>
-            <p className="text-slate-300 text-sm sm:text-base mt-2 font-light">
+            <span className="block w-14 h-1 bg-brand-orange rounded-full mt-3" />
+            <p className="text-slate-600 text-sm sm:text-base mt-3">
               Immerse yourself in handpicked sanctuaries across snow-clad mountain passes, serene backwaters, and pristine tropical archipelagos.
             </p>
           </div>
@@ -113,14 +107,14 @@ export default function PopularDestinations() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => scroll('left')}
-              className="w-11 h-11 rounded-full bg-white/[0.05] hover:bg-primaryCyan hover:text-white border border-white/[0.1] text-slate-300 flex items-center justify-center transition-all duration-200 active:scale-95"
+              className="w-11 h-11 rounded-full bg-white hover:bg-brand-orange hover:text-white hover:border-brand-orange border border-brand-line text-brand-navy shadow-soft flex items-center justify-center transition-all duration-200 active:scale-95"
               aria-label="Scroll left"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={() => scroll('right')}
-              className="w-11 h-11 rounded-full bg-white/[0.05] hover:bg-primaryCyan hover:text-white border border-white/[0.1] text-slate-300 flex items-center justify-center transition-all duration-200 active:scale-95"
+              className="w-11 h-11 rounded-full bg-white hover:bg-brand-orange hover:text-white hover:border-brand-orange border border-brand-line text-brand-navy shadow-soft flex items-center justify-center transition-all duration-200 active:scale-95"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-5 h-5" />
@@ -131,7 +125,7 @@ export default function PopularDestinations() {
         {/* Loading Spinner */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-8 h-8 border-2 border-primaryCyan border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-brand-orange border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
           /* Horizontal Destination Showcase */
@@ -148,45 +142,45 @@ export default function PopularDestinations() {
                 >
                   <Link
                     href={`/location/${dest.slug}`}
-                    className="group relative h-[380px] sm:h-[420px] rounded-3xl overflow-hidden block border border-white/[0.08] hover:border-primaryCyan/50 transition-all duration-500 shadow-card hover:shadow-cardHover"
+                    className="group relative h-full rounded-xl overflow-hidden flex flex-col bg-white border border-brand-line hover:border-brand-orange/50 transition-all duration-300 shadow-soft hover:shadow-widget"
                   >
                     {/* Destination Image */}
-                    <img
-                      src={dest.imageUrl}
-                      alt={dest.name}
-                      className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
-                    />
+                    <div className="relative h-56 sm:h-60 overflow-hidden">
+                      <img
+                        src={dest.imageUrl}
+                        alt={dest.name}
+                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
-                    {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/40 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
+                      {/* Top Chips */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-brand-navy bg-white px-3 py-1 rounded-full shadow-soft flex items-center gap-1">
+                          <Calendar className="w-3 h-3 text-brand-orange" />
+                          <span>{meta?.season || 'Best Season'}</span>
+                        </span>
 
-                    {/* Top Chips */}
-                    <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-200 bg-midnight/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/[0.1] flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-gold" />
-                        <span>{meta?.season || 'Best Season'}</span>
-                      </span>
+                        <span className="text-[10px] font-bold text-white bg-brand-orange px-2.5 py-1 rounded-full shadow-soft">
+                          {dest.packageCount || 4}+ Tours
+                        </span>
+                      </div>
 
-                      <span className="text-[10px] font-bold text-primaryCyan bg-primaryCyan/20 backdrop-blur-md px-2.5 py-1 rounded-full border border-primaryCyan/40">
-                        {dest.packageCount || 4}+ Tours
-                      </span>
+                      <h3 className="absolute bottom-3 left-4 right-4 z-10 text-xl sm:text-2xl font-extrabold text-white leading-tight drop-shadow">
+                        {dest.name}
+                      </h3>
                     </div>
 
-                    {/* Bottom Editorial Content */}
-                    <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 z-10">
-                      <span className="text-[11px] font-semibold text-gold tracking-widest uppercase block mb-1">
+                    {/* Card Body */}
+                    <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                      <span className="text-[11px] font-bold text-brand-orangeDark tracking-widest uppercase block mb-3">
                         {meta?.vibe || 'Curated Escape'}
                       </span>
 
-                      <h3 className="editorial-heading text-xl sm:text-2xl font-bold text-white group-hover:text-primaryCyan transition-colors leading-tight mb-3">
-                        {dest.name}
-                      </h3>
-
-                      <div className="flex items-center justify-between pt-3 border-t border-white/[0.1] text-xs font-semibold text-slate-300">
-                        <span className="group-hover:text-white transition-colors">
+                      <div className="flex items-center justify-between pt-3 border-t border-brand-line text-xs font-semibold text-brand-blue">
+                        <span className="group-hover:text-brand-orange transition-colors">
                           Explore Custom Itineraries
                         </span>
-                        <div className="w-8 h-8 rounded-full bg-white/[0.08] group-hover:bg-primaryCyan group-hover:text-white flex items-center justify-center transition-all duration-300 transform group-hover:translate-x-1">
+                        <div className="w-8 h-8 rounded-full bg-brand-orangeLight text-brand-orange group-hover:bg-brand-orange group-hover:text-white flex items-center justify-center transition-all duration-300 transform group-hover:translate-x-1">
                           <ArrowRight className="w-4 h-4" />
                         </div>
                       </div>

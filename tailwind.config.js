@@ -36,13 +36,35 @@ module.exports = {
           dark: '#B97D1A',
         },
 
+        // Bharat-Booking style light theme (orange + navy on white/cream)
+        brand: {
+          orange: '#FF931E',
+          orangeDark: '#F07F00',
+          orangeLight: '#FFF4E6',
+          cream: '#F7F8FA',
+          navy: '#323465',
+          blue: '#213F98',
+          blueDark: '#172D70',
+          blueLight: '#E8ECF7',
+          green: '#7AA843',
+          red: '#E41E2B',
+          ink: '#212529',
+          nav: '#3E3C3C',
+          label: '#474747',
+          heading: '#1A2B49',
+          gray: '#7F7F7F',
+          muted: '#6C757D',
+          line: '#DDDDDD',
+          field: '#E9ECEF',
+        },
+
         // Warm sands and neutrals
         sand: '#f8f5ef',
         sandMuted: '#e5ded1',
       },
       fontFamily: {
-        sans: ['var(--font-sans)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['var(--font-display)', 'Cinzel', 'Playfair Display', 'Georgia', 'serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        display: ['Oswald', 'var(--font-display)', 'Cinzel', 'Playfair Display', 'Georgia', 'serif'],
       },
       boxShadow: {
         card: '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
@@ -50,6 +72,8 @@ module.exports = {
         glow: '0 0 30px rgba(0, 168, 232, 0.35)',
         goldGlow: '0 0 30px rgba(229, 169, 60, 0.35)',
         glass: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        widget: '0 6px 30px -6px rgba(15, 23, 42, 0.18)',
+        soft: '0 4px 18px -4px rgba(15, 23, 42, 0.12)',
       },
       backdropBlur: {
         xs: '2px',

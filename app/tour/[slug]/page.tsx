@@ -6,27 +6,36 @@ import Link from 'next/link';
 import { getTourBySlug, submitInquiry } from '@/lib/supabase';
 import { TourPackage } from '@/types';
 import InquiryModal from '@/components/InquiryModal';
+import SectionTitle from '@/components/SectionTitle';
 import {
   Star,
   Clock,
   MapPin,
   CheckCircle2,
-  XCircle,
   Hotel,
   Utensils,
   Car,
   Compass,
-  Calendar,
   ChevronDown,
+  ChevronRight,
   Phone,
   Send,
   ArrowLeft,
-  Sparkles,
   ShieldCheck,
-  Award,
-  Users
 } from 'lucide-react';
 import { siteConfig } from '@/config/siteConfig';
+
+const panelCls = 'bg-white p-5 sm:p-6 rounded-sm border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)]';
+const inputCls =
+  'w-full bg-white border border-[#ccc] rounded-sm px-3 py-2 text-sm text-brand-ink placeholder-[#6c757d] focus:outline-none focus:border-brand-blue transition-colors';
+const labelCls = 'block text-sm font-medium text-brand-blue mb-1';
+
+const INCLUDED = [
+  { Icon: Hotel, title: '4★ / 5★ Stays', sub: 'Verified Luxury' },
+  { Icon: Utensils, title: 'Daily Meals', sub: 'Breakfast & Dinner' },
+  { Icon: Car, title: 'Private Chauffeur', sub: 'Dedicated Vehicle' },
+  { Icon: Compass, title: 'Guided Tours', sub: 'All Major Spots' },
+];
 
 export default function TourDetailPage() {
   const params = useParams();
@@ -57,10 +66,10 @@ export default function TourDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-midnight text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white text-brand-ink flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-primaryCyan border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-semibold text-slate-400">Loading Itinerary & Package Details...</p>
+          <div className="w-10 h-10 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+          <p className="text-[13px] font-medium text-brand-muted">Loading Itinerary & Package Details...</p>
         </div>
       </div>
     );
@@ -68,15 +77,17 @@ export default function TourDetailPage() {
 
   if (!tour) {
     return (
-      <div className="min-h-screen bg-midnight py-24 px-4 text-center text-white">
-        <div className="max-w-md mx-auto glass-panel p-8 rounded-3xl">
-          <h2 className="text-2xl font-bold mb-3">Tour Package Not Found</h2>
-          <p className="text-slate-400 text-xs mb-6 font-light">
+      <div className="min-h-screen bg-brand-cream py-24 px-4 text-center text-brand-ink">
+        <div className="max-w-md mx-auto bg-white border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)] p-8 rounded-sm">
+          <h2 className="text-[26px] leading-tight mb-3">
+            <span className="font-light text-brand-gray">Tour Package</span> <span className="font-bold text-brand-orange">Not Found</span>
+          </h2>
+          <p className="text-sm text-brand-ink mb-6">
             The requested journey may have been relocated or updated in our catalog.
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primaryCyan text-white font-bold text-xs shadow-glow"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-sm bg-brand-blue hover:bg-brand-blueDark text-white text-sm font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to All Packages</span>
@@ -105,105 +116,69 @@ export default function TourDetailPage() {
   };
 
   return (
-    <div className="bg-midnight text-white min-h-screen pb-20">
-      {/* Luxury Hero Banner */}
-      <div className="relative h-[480px] sm:h-[540px] lg:h-[600px] overflow-hidden flex flex-col justify-end">
+    <div className="bg-brand-cream text-brand-ink text-sm min-h-screen pb-14">
+      {/* Hero Banner */}
+      <div className="relative min-h-[300px] sm:h-[380px] pt-20 overflow-hidden flex flex-col justify-end">
         <img
           src={tour.imageUrl}
           alt={tour.title}
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        {/* Deep Multi-layer Darkening */}
-        <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/60 to-midnight/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-midnight/80 via-transparent to-midnight/50" />
+        {/* Legibility Overlay */}
+        <div className="absolute inset-0 bg-black/50" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pb-12 w-full">
-          {/* Breadcrumb Back Link */}
-          <Link
-            href="/#packages"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-primaryCyan mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Curated Packages</span>
-          </Link>
+        <div className="relative z-10 container-bb pb-8">
+          {/* Breadcrumb */}
+          <nav className="flex flex-wrap items-center gap-1.5 text-[13px] text-white/85 mb-3">
+            <Link href="/" className="hover:text-white transition-colors">
+              Home
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <Link href="/#packages" className="hover:text-white transition-colors">
+              Holiday Packages
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="text-white">{tour.category || 'Featured'}</span>
+          </nav>
 
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-            <div className="max-w-3xl">
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <span className="bg-primaryCyan/20 text-primaryCyan text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider border border-primaryCyan/30">
-                  {tour.category || 'Featured'}
-                </span>
-                <span className="flex items-center gap-1 text-xs text-slate-300 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/[0.1]">
-                  <MapPin className="w-3.5 h-3.5 text-primaryCyan" />
-                  <span className="capitalize">{tour.location.replace(/tourpackage|-tour-packages|tour-packages/gi, '').replace(/-/g, ' ')}</span>
-                </span>
-              </div>
+          <h1 className="text-[24px] sm:text-[30px] md:text-[34px] font-medium text-white leading-tight mb-3 max-w-4xl">
+            {tour.title}
+          </h1>
 
-              <h1 className="editorial-heading text-3xl sm:text-4xl lg:text-6xl font-bold text-white leading-tight mb-4">
-                {tour.title}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-300">
-                <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
-                  <Clock className="w-3.5 h-3.5 text-gold" />
-                  <span>{tour.durationNights} Nights / {tour.durationDays} Days</span>
-                </span>
-                <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{tour.rating || 5.0} Rating</span>
-                </span>
-                <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>100% Tailor-Made</span>
-                </span>
-              </div>
-            </div>
-
-            {/* Quick Price Banner Card */}
-            <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-white/[0.12] flex flex-col items-end min-w-[280px]">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Starting Package Price
-              </span>
-              <div className="flex items-baseline gap-2.5 my-1">
-                <span className="text-3xl sm:text-4xl font-black text-white">
-                  ₹{tour.price.toLocaleString('en-IN')}
-                </span>
-                {tour.originalPrice && (
-                  <span className="text-sm text-slate-400 line-through">
-                    ₹{tour.originalPrice.toLocaleString('en-IN')}
-                  </span>
-                )}
-              </div>
-              <span className="text-[10px] text-slate-400 mb-3">per person • inclusive of taxes</span>
-
-              <button
-                type="button"
-                onClick={() => setInquiryModalOpen(true)}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-primaryCyan to-blue-600 hover:from-blue-500 hover:to-primaryCyan text-white font-bold text-xs uppercase tracking-wider shadow-glow hover:shadow-cyanGlow transition-all duration-300"
-              >
-                Book This Itinerary
-              </button>
-            </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-white/90">
+            <span className="flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5" />
+              <span className="capitalize">{tour.location.replace(/tourpackage|-tour-packages|tour-packages/gi, '').replace(/-/g, ' ')}</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{tour.durationNights} Nights / {tour.durationDays} Days</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span>{tour.rating || 5.0} Rating</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>100% Tailor-Made</span>
+            </span>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 sm:gap-10">
+      <div className="container-bb pt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[30px]">
           {/* Left Column: Details, Highlights, Itinerary */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-6 min-w-0">
             {/* Highlights */}
             {tour.highlights && tour.highlights.length > 0 && (
-              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/[0.08]">
-                <h3 className="editorial-heading text-xl sm:text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-gold" />
-                  <span>Curated Highlights</span>
-                </h3>
+              <div className={panelCls}>
+                <SectionTitle light="Curated" bold="Highlights" className="!text-left !mb-5" />
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {tour.highlights.map((h, i) => (
-                    <li key={i} className="flex items-start gap-3 text-xs sm:text-sm text-slate-200 font-light">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <li key={i} className="flex items-start gap-2.5 text-sm text-brand-ink">
+                      <CheckCircle2 className="w-4 h-4 text-brand-green flex-shrink-0 mt-0.5" />
                       <span>{h}</span>
                     </li>
                   ))}
@@ -212,39 +187,24 @@ export default function TourDetailPage() {
             )}
 
             {/* Inclusions */}
-            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/[0.08]">
-              <h3 className="editorial-heading text-xl sm:text-2xl font-bold text-white mb-4">
-                What's Included in Your Voyage
-              </h3>
+            <div className={panelCls}>
+              <SectionTitle light="What's" bold="Included" className="!text-left !mb-5" />
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 pb-6 border-b border-white/[0.08]">
-                <div className="p-3 rounded-2xl bg-white/[0.03] text-center border border-white/[0.06]">
-                  <Hotel className="w-5 h-5 text-primaryCyan mx-auto mb-1.5" />
-                  <span className="block text-xs font-bold text-white">4★ / 5★ Stays</span>
-                  <span className="text-[10px] text-slate-400">Verified Luxury</span>
-                </div>
-                <div className="p-3 rounded-2xl bg-white/[0.03] text-center border border-white/[0.06]">
-                  <Utensils className="w-5 h-5 text-primaryCyan mx-auto mb-1.5" />
-                  <span className="block text-xs font-bold text-white">Daily Meals</span>
-                  <span className="text-[10px] text-slate-400">Breakfast & Dinner</span>
-                </div>
-                <div className="p-3 rounded-2xl bg-white/[0.03] text-center border border-white/[0.06]">
-                  <Car className="w-5 h-5 text-primaryCyan mx-auto mb-1.5" />
-                  <span className="block text-xs font-bold text-white">Private Chauffeur</span>
-                  <span className="text-[10px] text-slate-400">Dedicated Vehicle</span>
-                </div>
-                <div className="p-3 rounded-2xl bg-white/[0.03] text-center border border-white/[0.06]">
-                  <Compass className="w-5 h-5 text-primaryCyan mx-auto mb-1.5" />
-                  <span className="block text-xs font-bold text-white">Guided Tours</span>
-                  <span className="text-[10px] text-slate-400">All Major Spots</span>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-5 mb-5 pb-5 border-b border-[#ddd] sm:divide-x divide-[#ddd]">
+                {INCLUDED.map(({ Icon, title, sub }) => (
+                  <div key={title} className="text-center px-2">
+                    <Icon className="w-9 h-9 text-brand-orange mx-auto mb-2" strokeWidth={1.3} />
+                    <span className="block text-sm font-medium text-brand-ink">{title}</span>
+                    <span className="text-[13px] text-[#999]">{sub}</span>
+                  </div>
+                ))}
               </div>
 
               {tour.inclusions && tour.inclusions.length > 0 && (
                 <ul className="space-y-2">
                   {tour.inclusions.map((inc, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-xs text-slate-300 font-light">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <li key={idx} className="flex items-start gap-2 text-sm text-brand-ink">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-brand-green flex-shrink-0 mt-[3px]" />
                       <span>{inc}</span>
                     </li>
                   ))}
@@ -254,36 +214,33 @@ export default function TourDetailPage() {
 
             {/* Day Wise Itinerary */}
             {tour.itinerary && tour.itinerary.length > 0 && (
-              <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/[0.08]">
-                <h3 className="editorial-heading text-xl sm:text-2xl font-bold text-white mb-6">
-                  Day-by-Day Journey Plan
-                </h3>
+              <div className={panelCls}>
+                <SectionTitle light="Day-by-Day" bold="Itinerary" className="!text-left !mb-5" />
 
-                <div className="space-y-3.5">
+                <div className="space-y-2.5">
                   {tour.itinerary.map((item) => (
-                    <div
-                      key={item.day}
-                      className="border border-white/[0.08] rounded-2xl overflow-hidden bg-midnight/60 transition-colors"
-                    >
+                    <div key={item.day} className="border border-[#ddd] rounded-sm overflow-hidden bg-white">
                       <button
                         onClick={() => setActiveDay(activeDay === item.day ? null : item.day)}
-                        className="w-full px-5 py-4 flex items-center justify-between text-left hover:bg-white/[0.03] transition-colors"
+                        className={`w-full px-4 py-3 flex items-center justify-between gap-3 text-left transition-colors ${
+                          activeDay === item.day ? 'bg-brand-blueLight' : 'hover:bg-brand-cream'
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="w-8 h-8 rounded-xl bg-primaryCyan/20 text-primaryCyan font-bold text-xs flex items-center justify-center border border-primaryCyan/30">
-                            {item.day}
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="flex-shrink-0 bg-brand-blue text-white text-[13px] font-medium px-2.5 py-1 rounded-sm">
+                            Day {item.day}
                           </span>
-                          <span className="font-bold text-sm text-white">{item.title}</span>
+                          <span className="font-medium text-sm text-brand-ink">{item.title}</span>
                         </div>
                         <ChevronDown
-                          className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${
-                            activeDay === item.day ? 'rotate-180 text-primaryCyan' : ''
+                          className={`w-4 h-4 flex-shrink-0 text-brand-muted transition-transform duration-200 ${
+                            activeDay === item.day ? 'rotate-180 text-brand-blue' : ''
                           }`}
                         />
                       </button>
 
                       {activeDay === item.day && (
-                        <div className="px-5 pb-5 pt-1 text-xs text-slate-300 leading-relaxed font-light border-t border-white/[0.06]">
+                        <div className="px-4 py-3 text-sm text-brand-ink leading-[1.7] border-t border-[#ddd]">
                           {item.description}
                         </div>
                       )}
@@ -294,75 +251,87 @@ export default function TourDetailPage() {
             )}
           </div>
 
-          {/* Right Column: Sticky Quick Inquiry Box */}
-          <div>
-            <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/[0.12] shadow-2xl sticky top-24">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primaryCyan/10 text-primaryCyan text-[10px] font-bold uppercase tracking-wider mb-2">
-                <Sparkles className="w-3 h-3 text-gold" />
-                <span>Express Quotation</span>
-              </div>
-              <h3 className="editorial-heading text-xl font-bold text-white mb-1">
-                Get an Instant Free Quote
-              </h3>
-              <p className="text-xs text-slate-400 mb-5 font-light">
-                Discuss dates, hotel upgrades, and customized stops with our senior travel coordinator.
-              </p>
-
-              {formMsg ? (
-                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs rounded-2xl mb-4">
-                  {formMsg}
+          {/* Right Column: Price + Sticky Quick Inquiry Box */}
+          <div className="space-y-6">
+            {/* Price Card */}
+            <div className={`${panelCls} !p-0`}>
+              <div className="p-5">
+                <span className="block text-[13px] text-brand-muted">Starting Package Price</span>
+                <div className="flex items-baseline gap-2.5 my-1">
+                  <span className="text-[28px] font-bold text-brand-orange">₹{tour.price.toLocaleString('en-IN')}</span>
+                  {tour.originalPrice && (
+                    <span className="text-sm text-brand-muted line-through">₹{tour.originalPrice.toLocaleString('en-IN')}</span>
+                  )}
                 </div>
-              ) : (
-                <form onSubmit={handleInlineInquiry} className="space-y-3.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Full Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g. Vikram Singhania"
-                      className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Phone / WhatsApp *</label>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+91 9876543210"
-                      className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">Expected Travel Date</label>
-                    <input
-                      type="date"
-                      value={travelDate}
-                      onChange={(e) => setTravelDate(e.target.value)}
-                      className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan transition-colors"
-                    />
-                  </div>
+                <span className="text-[13px] text-brand-muted">per person • inclusive of taxes</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInquiryModalOpen(true)}
+                className="w-full h-12 bg-[#f39237] hover:bg-brand-orangeDark text-white text-sm font-bold transition-colors"
+              >
+                Book This Itinerary
+              </button>
+            </div>
 
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-primaryCyan to-blue-600 hover:from-blue-500 hover:to-primaryCyan text-white font-bold text-xs uppercase tracking-wider shadow-glow hover:shadow-cyanGlow transition-all duration-300 flex items-center justify-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Request Callback</span>
-                  </button>
-                </form>
-              )}
+            <div className="bg-white rounded-sm border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)] lg:sticky lg:top-24">
+              <div className="bg-brand-blue text-white px-5 py-3 rounded-t-sm">
+                <h3 className="text-base font-medium">Get an Instant Free Quote</h3>
+              </div>
+              <div className="p-5">
+                <p className="text-[13px] text-brand-muted mb-4">
+                  Discuss dates, hotel upgrades, and customized stops with our senior travel coordinator.
+                </p>
 
-              <div className="mt-6 pt-5 border-t border-white/[0.08] flex items-center justify-center gap-2 text-xs text-slate-300">
-                <Phone className="w-4 h-4 text-primaryCyan" />
-                <span>Direct Line: </span>
-                <a href={siteConfig.phoneCallUrl} className="font-bold text-white hover:text-primaryCyan transition-colors">
-                  {siteConfig.phoneNumber}
-                </a>
+                {formMsg ? (
+                  <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-sm mb-4">{formMsg}</div>
+                ) : (
+                  <form onSubmit={handleInlineInquiry} className="space-y-3.5">
+                    <div>
+                      <label className={labelCls}>Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Vikram Singhania"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Phone / WhatsApp *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+91 9876543210"
+                        className={inputCls}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Expected Travel Date</label>
+                      <input type="date" value={travelDate} onChange={(e) => setTravelDate(e.target.value)} className={inputCls} />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full h-[42px] rounded-sm bg-brand-blue hover:bg-brand-blueDark disabled:opacity-70 text-white text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Request Callback</span>
+                    </button>
+                  </form>
+                )}
+
+                <div className="mt-5 pt-4 border-t border-[#ddd] flex flex-wrap items-center justify-center gap-1.5 text-[13px] text-brand-muted">
+                  <Phone className="w-4 h-4 text-brand-orange" strokeWidth={1.5} />
+                  <span>Direct Line:</span>
+                  <a href={siteConfig.phoneCallUrl} className="font-medium text-brand-blue hover:underline">
+                    {siteConfig.phoneNumber}
+                  </a>
+                </div>
               </div>
             </div>
           </div>

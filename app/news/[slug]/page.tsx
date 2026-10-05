@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getBlogs } from '@/lib/supabase';
 import { Blog } from '@/types';
-import { ArrowLeft, Calendar, User } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronRight, User } from 'lucide-react';
 
 // Static fallback data for the hardcoded blog posts
 const FALLBACK_BLOGS: Blog[] = [
@@ -60,10 +60,10 @@ export default function BlogPostPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-midnight text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white text-brand-ink flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-primaryCyan border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-semibold text-slate-400">Loading Article...</p>
+          <div className="w-10 h-10 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+          <p className="text-[13px] font-medium text-brand-muted">Loading Article...</p>
         </div>
       </div>
     );
@@ -71,13 +71,15 @@ export default function BlogPostPage() {
 
   if (!blog) {
     return (
-      <div className="min-h-screen bg-midnight py-24 px-4 text-center text-white">
-        <div className="max-w-md mx-auto glass-panel p-8 rounded-3xl">
-          <h2 className="text-2xl font-bold mb-3">Article Not Found</h2>
-          <p className="text-slate-400 text-xs mb-6 font-light">The requested travel guide could not be located.</p>
+      <div className="min-h-screen bg-brand-cream py-24 px-4 text-center text-brand-ink">
+        <div className="max-w-md mx-auto bg-white border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)] p-8 rounded-sm">
+          <h2 className="text-[26px] leading-tight mb-3">
+            <span className="font-light text-brand-gray">Article</span> <span className="font-bold text-brand-orange">Not Found</span>
+          </h2>
+          <p className="text-sm text-brand-ink mb-6">The requested travel guide could not be located.</p>
           <Link
             href="/news"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primaryCyan text-white font-bold text-xs shadow-glow"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-sm bg-brand-blue hover:bg-brand-blueDark text-white text-sm font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to Travel Journal</span>
@@ -88,65 +90,58 @@ export default function BlogPostPage() {
   }
 
   return (
-    <div className="min-h-screen bg-midnight text-white pb-20">
-      {/* Editorial Hero Header */}
-      <div className="relative w-full h-[50vh] sm:h-[60vh] overflow-hidden flex flex-col justify-end">
-        <img 
-          src={blog.image_url} 
-          alt={blog.title} 
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-midnight via-midnight/70 to-midnight/20" />
-        
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 pb-12 w-full">
-          <Link
-            href="/news"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-primaryCyan mb-4 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Journal</span>
-          </Link>
-          
-          <h1 className="editorial-heading text-3xl sm:text-4xl lg:text-6xl font-bold text-white leading-tight mb-4">
-            {blog.title}
-          </h1>
-          
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300">
-            <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
-              <Calendar className="w-3.5 h-3.5 text-gold" />
+    <div className="bg-brand-cream text-brand-ink text-sm pb-14">
+      {/* Hero banner */}
+      <div className="relative w-full h-[260px] sm:h-[340px] overflow-hidden flex flex-col justify-end">
+        <img src={blog.image_url} alt={blog.title} className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/50" />
+
+        <div className="relative z-10 container-bb pb-8">
+          <nav className="flex flex-wrap items-center gap-1.5 text-[13px] text-white/85 mb-3">
+            <Link href="/" className="hover:text-white">
+              Home
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <Link href="/news" className="hover:text-white">
+              Travel Journal
+            </Link>
+          </nav>
+
+          <h1 className="text-[24px] sm:text-[30px] md:text-[34px] font-medium text-white leading-tight mb-3 max-w-4xl">{blog.title}</h1>
+
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-white/90">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
               <span>{blog.created_at ? new Date(blog.created_at).toLocaleDateString() : 'Recently'}</span>
             </span>
-            <span className="flex items-center gap-1.5 bg-midnight/70 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/[0.1]">
-              <User className="w-3.5 h-3.5 text-primaryCyan" />
+            <span className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" />
               <span>By {blog.author}</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Editorial Article Body */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-12 relative z-10">
-        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-white/[0.08] shadow-card">
-          <div className="prose prose-lg prose-invert max-w-none text-slate-200 font-light leading-relaxed space-y-6">
+      {/* Article body */}
+      <div className="container-bb pt-8">
+        <div className="max-w-[860px] mx-auto bg-white p-5 sm:p-8 rounded-sm border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)]">
+          <div className="max-w-none text-brand-ink space-y-4">
             {blog.content.split('\n').filter(p => p.trim() !== '').map((paragraph, idx) => (
-              <p key={idx} className="text-sm sm:text-base text-slate-300 leading-relaxed">
+              <p key={idx} className="text-sm sm:text-[15px] text-brand-ink leading-[1.7]">
                 {paragraph}
               </p>
             ))}
           </div>
 
-          <div className="mt-12 pt-8 border-t border-white/[0.08] flex items-center justify-between">
-            <Link
-              href="/news"
-              className="text-xs font-semibold text-primaryCyan hover:underline flex items-center gap-1.5"
-            >
+          <div className="mt-8 pt-5 border-t border-[#ddd] flex flex-wrap items-center justify-between gap-4">
+            <Link href="/news" className="text-[13px] font-medium text-brand-blue hover:underline flex items-center gap-1.5">
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>More Articles in Journal</span>
             </Link>
 
             <Link
               href="/#packages"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-primaryCyan to-blue-600 text-white font-bold text-xs shadow-glow"
+              className="px-4 py-2 rounded-sm bg-brand-blue hover:bg-brand-blueDark text-white text-[13px] font-medium transition-colors"
             >
               Explore Packages
             </Link>

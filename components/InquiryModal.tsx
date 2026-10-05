@@ -1,19 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  X,
-  Check,
-  ShieldCheck,
-  Sparkles,
-  Phone,
-  Calendar,
-  Users,
-  Compass,
-  MapPin,
-  Clock,
-  ArrowRight
-} from 'lucide-react';
+import { X, Check, ShieldCheck, Clock } from 'lucide-react';
 import { TourPackage, Inquiry } from '@/types';
 import { submitInquiry } from '@/lib/supabase';
 import { siteConfig } from '@/config/siteConfig';
@@ -23,6 +11,10 @@ interface InquiryModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+const inputCls =
+  'w-full bg-white border border-[#ccc] rounded-sm px-3 py-2 text-sm text-brand-ink placeholder-[#6c757d] focus:outline-none focus:border-brand-blue transition-colors';
+const labelCls = 'block text-sm font-medium text-brand-blue mb-1';
 
 export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProps) {
   const [formData, setFormData] = useState<Inquiry>({
@@ -79,109 +71,77 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-300">
-      <div className="bg-midnight/95 backdrop-blur-2xl text-slate-200 w-full max-w-3xl rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.9)] overflow-hidden relative flex flex-col md:flex-row max-h-[92vh] border border-white/[0.12] animate-in zoom-in-95 duration-300">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-30 w-9 h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-slate-200 flex items-center justify-center transition-all duration-200"
-          title="Close modal"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Left Column: Visual & Trust Pillars */}
-        <div className="relative md:w-5/12 bg-midnightLight p-6 sm:p-8 flex flex-col justify-between overflow-hidden border-b md:border-b-0 md:border-r border-white/[0.08]">
-          {/* Subtle background image of destination */}
-          <img
-            src={tour?.imageUrl || 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1000&q=80'}
-            alt="Escape Preview"
-            className="absolute inset-0 w-full h-full object-cover object-center opacity-30 pointer-events-none"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-midnightLight via-midnightLight/80 to-midnightLight/60 pointer-events-none" />
-
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primaryCyan/20 text-primaryCyan text-[10px] font-bold uppercase tracking-wider mb-4 border border-primaryCyan/30">
-              <Sparkles className="w-3 h-3 text-gold" />
-              <span>Bespoke Holiday Concierge</span>
-            </div>
-
-            <h3 className="editorial-heading text-2xl sm:text-3xl font-bold text-white mb-2 leading-tight">
-              Craft Your Dream Itinerary
-            </h3>
-
-            <p className="text-xs text-slate-300 font-light leading-relaxed mb-6">
-              Connect directly with our dedicated travel coordinators for exclusive rates, customized hotel upgrades, and tailored itineraries.
-            </p>
-
-            {tour && (
-              <div className="p-3.5 rounded-2xl bg-midnight/80 border border-white/[0.1] backdrop-blur-md mb-6">
-                <span className="text-[10px] uppercase font-bold text-gold tracking-widest block mb-1">
-                  Selected Package
-                </span>
-                <h4 className="text-xs font-bold text-white line-clamp-1">{tour.title}</h4>
-                <div className="flex items-center gap-2 mt-1 text-[11px] text-slate-300">
-                  <span className="text-primaryCyan font-semibold">₹{tour.price.toLocaleString('en-IN')}</span>
-                  <span>•</span>
-                  <span>{tour.durationNights}N / {tour.durationDays}D</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="relative z-10 space-y-2 pt-4 border-t border-white/[0.08] text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>100% Free Custom Quotation</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gold" />
-              <span>Guaranteed 15-Minute Response</span>
-            </div>
-          </div>
+    <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-300">
+      <div className="bg-white text-brand-ink text-sm w-full max-w-[640px] rounded shadow-[0_4px_20px_rgba(0,0,0,0.25)] overflow-hidden relative flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-300">
+        {/* Header bar */}
+        <div className="bg-brand-blue text-white px-5 py-3 flex items-center justify-between gap-3 flex-shrink-0">
+          <h3 className="text-base sm:text-lg font-medium leading-tight">Craft Your Dream Itinerary</h3>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 -mr-1.5 flex items-center justify-center text-white/90 hover:text-white transition-colors"
+            title="Close modal"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        {/* Right Column: Form */}
-        <div className="md:w-7/12 p-6 sm:p-8 overflow-y-auto custom-scrollbar flex flex-col justify-center">
+        {/* Body */}
+        <div className="p-5 sm:p-6 overflow-y-auto custom-scrollbar">
           {submitted ? (
             <div className="text-center py-10 space-y-3">
-              <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
-                <Check className="w-8 h-8" />
+              <div className="w-14 h-14 bg-brand-blue text-white rounded-full flex items-center justify-center mx-auto">
+                <Check className="w-7 h-7" />
               </div>
-              <h4 className="text-2xl font-bold text-white">Inquiry Received</h4>
-              <p className="text-xs text-slate-300 max-w-xs mx-auto font-light leading-relaxed">
+              <h4 className="text-xl font-medium text-brand-ink">Inquiry Received</h4>
+              <p className="text-sm text-brand-muted max-w-xs mx-auto leading-relaxed">
                 Thank you! Our destination specialist is preparing your customized quotation and will reach out promptly.
               </p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <h4 className="text-lg font-bold text-white mb-1">Traveler Details</h4>
-                <p className="text-xs text-slate-400 mb-4 font-light">Tell us who is traveling and when.</p>
-              </div>
+              <p className="text-[13px] text-brand-muted">
+                Connect directly with our dedicated travel coordinators for exclusive rates, customized hotel upgrades, and tailored itineraries.
+              </p>
+
+              {tour && (
+                <div className="flex items-center gap-3 border border-[#ddd] rounded-sm p-2.5 bg-brand-cream">
+                  <img src={tour.imageUrl} alt={tour.title} className="w-16 h-12 object-cover flex-shrink-0" />
+                  <div className="min-w-0">
+                    <span className="block text-[13px] text-brand-muted">Selected Package</span>
+                    <h4 className="text-sm font-medium text-brand-ink line-clamp-1">{tour.title}</h4>
+                    <div className="flex items-center gap-2 text-[13px]">
+                      <span className="text-brand-orange">₹{tour.price.toLocaleString('en-IN')}</span>
+                      <span className="text-brand-muted">•</span>
+                      <span className="text-brand-muted">
+                        {tour.durationNights}N / {tour.durationDays}D
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Name & Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Your Full Name *</label>
+                  <label className={labelCls}>Your Full Name *</label>
                   <input
                     type="text"
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. Ananya Roy"
-                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Phone / WhatsApp *</label>
+                  <label className={labelCls}>Phone / WhatsApp *</label>
                   <input
                     type="tel"
                     required
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91 9876543210"
-                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                    className={inputCls}
                   />
                 </div>
               </div>
@@ -189,21 +149,21 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
               {/* Email & Guests */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Email Address</label>
+                  <label className={labelCls}>Email Address</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="name@example.com"
-                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Travelers</label>
+                  <label className={labelCls}>Travelers</label>
                   <select
                     value={formData.guestsCount}
                     onChange={(e) => setFormData({ ...formData, guestsCount: parseInt(e.target.value) || 2 })}
-                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan transition-colors"
+                    className={inputCls}
                   >
                     <option value={1}>Solo Traveler (1 Person)</option>
                     <option value={2}>Couple / 2 Persons</option>
@@ -216,63 +176,66 @@ export default function InquiryModal({ tour, isOpen, onClose }: InquiryModalProp
               {/* Destination & Travel Date */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Destination</label>
+                  <label className={labelCls}>Destination</label>
                   <input
                     type="text"
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
                     placeholder="e.g. Sikkim, Kashmir, Bali"
-                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-primaryCyan transition-colors"
+                    className={inputCls}
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-300 mb-1">Expected Date</label>
+                  <label className={labelCls}>Expected Date</label>
                   <input
                     type="date"
                     value={formData.travelDate}
                     onChange={(e) => setFormData({ ...formData, travelDate: e.target.value })}
-                    className="w-full bg-midnight border border-white/[0.1] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-primaryCyan transition-colors"
+                    className={inputCls}
                   />
                 </div>
               </div>
 
               {/* Human verification check */}
-              <div className="pt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-xl bg-midnight border border-white/[0.08] hover:border-white/[0.15] transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={captchaChecked}
-                    onChange={(e) => setCaptchaChecked(e.target.checked)}
-                    className="w-4 h-4 rounded text-primaryCyan border-white/[0.2] bg-midnight focus:ring-primaryCyan cursor-pointer"
-                  />
-                  <span className="text-xs text-slate-300 font-medium">
-                    I am requesting custom itinerary pricing from The Navigators
-                  </span>
-                </label>
-              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer p-2.5 rounded-sm border border-[#ccc] hover:border-brand-blue transition-colors">
+                <input
+                  type="checkbox"
+                  checked={captchaChecked}
+                  onChange={(e) => setCaptchaChecked(e.target.checked)}
+                  className="w-4 h-4 accent-brand-blue cursor-pointer flex-shrink-0"
+                />
+                <span className="text-[13px] text-brand-ink">I am requesting custom itinerary pricing from The Navigators</span>
+              </label>
 
               {/* Submit CTA */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-primaryCyan to-blue-600 hover:from-blue-500 hover:to-primaryCyan text-white font-bold text-xs uppercase tracking-wider shadow-glow hover:shadow-cyanGlow transition-all duration-300 flex items-center justify-center gap-2 mt-2"
-              >
-                {loading ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>REQUEST TAILORED QUOTE</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-
-              <div className="text-center pt-2">
-                <a
-                  href={siteConfig.phoneCallUrl}
-                  className="text-[11px] text-slate-400 hover:text-primaryCyan transition-colors"
+              <div className="text-center pt-1">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="inline-flex items-center justify-center w-full sm:w-auto min-w-[180px] h-[45px] px-8 rounded-full bg-brand-blue hover:bg-brand-blueDark disabled:opacity-70 text-white text-[15px] font-medium transition-colors"
                 >
-                  Need instant answers? Speak with concierge at <span className="font-bold text-white">{siteConfig.phoneNumber}</span>
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span>Request Tailored Quote</span>
+                  )}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] text-brand-muted">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-brand-orange" strokeWidth={1.5} />
+                  100% Free Custom Quotation
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-brand-orange" strokeWidth={1.5} />
+                  Guaranteed 15-Minute Response
+                </span>
+              </div>
+
+              <div className="text-center border-t border-[#ddd] pt-3">
+                <a href={siteConfig.phoneCallUrl} className="text-[13px] text-brand-muted hover:text-brand-blue transition-colors">
+                  Need instant answers? Speak with concierge at <span className="font-medium text-brand-blue">{siteConfig.phoneNumber}</span>
                 </a>
               </div>
             </form>

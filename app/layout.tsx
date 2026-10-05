@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import WhatsAppWidget from '@/components/WhatsAppWidget';
+import SideContactTabs from '@/components/SideContactTabs';
 import AutoPopupForm from '@/components/AutoPopupForm';
 
 export const metadata: Metadata = {
@@ -29,7 +29,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: '#0d0d2b',
+  themeColor: '#F7941D',
 };
 
 export default function RootLayout({
@@ -38,16 +38,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-midnight text-slate-100 antialiased min-h-screen flex flex-col justify-between relative selection:bg-primaryCyan/30 selection:text-white">
-        {/* Subtle Luxury Ambient Glows in Background */}
-        <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-primaryCyan/10 rounded-full blur-[140px] pointer-events-none -z-10 animate-ambient-glow" />
-        <div className="fixed bottom-1/4 right-10 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[160px] pointer-events-none -z-10" />
-
+    <html lang="en">
+      <body className="bg-white text-brand-ink antialiased min-h-screen flex flex-col justify-between relative">
         <Header />
         <main className="flex-1 relative z-10">{children}</main>
         <Footer />
-        <WhatsAppWidget />
+        <SideContactTabs />
         <AutoPopupForm />
       </body>
     </html>

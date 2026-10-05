@@ -7,7 +7,8 @@ import { getTours } from '@/lib/supabase';
 import { TourPackage } from '@/types';
 import TourPackageCard from '@/components/TourPackageCard';
 import InquiryModal from '@/components/InquiryModal';
-import { MapPin, ArrowLeft, Sparkles, Compass } from 'lucide-react';
+import SectionTitle from '@/components/SectionTitle';
+import { ChevronRight } from 'lucide-react';
 
 export default function LocationPage() {
   const params = useParams();
@@ -38,59 +39,66 @@ export default function LocationPage() {
     ? slug.replace(/-/g, ' ').replace('tour package', '').replace('packages', '').trim().toUpperCase()
     : 'ALL DESTINATIONS';
 
+  const bannerImage =
+    tours[0]?.imageUrl ||
+    'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1600&q=80';
+
+  // Display-only title case for headings (e.g. "SHIMLA MANALI" -> "Shimla Manali").
+  const displayTitle = locationTitle.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+
   return (
-    <div className="py-14 sm:py-16 relative min-h-screen bg-midnight text-white overflow-hidden">
-      {/* Ambient background glows */}
-      <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primaryCyan/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-1/4 left-10 w-[400px] h-[400px] bg-gold/5 rounded-full blur-[140px] pointer-events-none" />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 hover:text-primaryCyan mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to Home</span>
-        </Link>
-
-        {/* Destination Header */}
-        <div className="mb-10 sm:mb-12 border-b border-white/[0.08] pb-6 sm:pb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-xs font-semibold mb-3">
-            <Compass className="w-3.5 h-3.5 text-primaryCyan" />
-            <span className="gold-gradient-text uppercase font-bold tracking-widest text-[11px]">
-              Destination Expeditions
-            </span>
-          </div>
-
-          <h1 className="editorial-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight leading-tight">
-            {locationTitle} TOUR PACKAGES
+    <div className="relative min-h-screen bg-white text-brand-ink text-sm">
+      {/* Page Banner */}
+      <div className="relative w-full h-[220px] sm:h-[300px] overflow-hidden flex items-end">
+        <img
+          src={bannerImage}
+          alt={`${locationTitle} tour packages`}
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative z-10 container-bb pb-8">
+          <nav className="flex flex-wrap items-center gap-1.5 text-[13px] text-white/85 mb-2">
+            <Link href="/" className="hover:text-white transition-colors">
+              Home
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span className="text-white">{displayTitle}</span>
+          </nav>
+          <h1 className="text-[26px] sm:text-[32px] md:text-[36px] font-medium text-white leading-tight">
+            {displayTitle} Tour Packages
           </h1>
-
-          <p className="text-slate-300 text-sm sm:text-base mt-2 font-light max-w-3xl">
-            Browse our masterfully crafted holiday packages for {locationTitle.toLowerCase()} featuring verified boutique stays, private chauffeur transfers, and 24/7 dedicated travel concierge.
-          </p>
         </div>
-
-        {/* Loading Spinner */}
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-8 h-8 border-2 border-primaryCyan border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            {tours.map((t) => (
-              <TourPackageCard
-                key={t.id}
-                tour={t}
-                onEnquire={(tour) => {
-                  setSelectedTour(tour);
-                  setModalOpen(true);
-                }}
-              />
-            ))}
-          </div>
-        )}
       </div>
+
+      <section className="bg-brand-cream py-10 md:py-12">
+        <div className="container-bb">
+          <SectionTitle
+            light={tours.length > 0 ? `${tours.length} Packages` : 'Curated'}
+            bold={tours.length > 0 ? 'Available' : 'Packages'}
+            subtitle={`Browse our masterfully crafted holiday packages for ${locationTitle.toLowerCase()} featuring verified boutique stays, private chauffeur transfers, and 24/7 dedicated travel concierge.`}
+          />
+
+          {/* Loading Spinner */}
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="w-8 h-8 border-2 border-brand-blue border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[30px]">
+              {tours.map((t) => (
+                <TourPackageCard
+                  key={t.id}
+                  tour={t}
+                  onEnquire={(tour) => {
+                    setSelectedTour(tour);
+                    setModalOpen(true);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
       <InquiryModal
         tour={selectedTour}
