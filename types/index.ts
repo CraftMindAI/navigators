@@ -52,6 +52,23 @@ export interface Destination {
   inclusions?: string[];
 }
 
+export interface Hotel {
+  id?: string;
+  name: string;
+  slug: string;
+  location: string;
+  category: 'domestic' | 'international';
+  starRating: number;
+  pricePerNight: number;
+  originalPrice?: number;
+  imageUrl: string;
+  description?: string;
+  amenities: string[];
+  destinationId?: string | null;
+  isFeatured?: boolean;
+  createdAt?: string;
+}
+
 export interface Blog {
   id?: string;
   title: string;

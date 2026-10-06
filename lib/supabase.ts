@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { TourPackage, Inquiry, Destination, Blog } from '@/types';
+import { TourPackage, Inquiry, Destination, Blog, Hotel } from '@/types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zsywloyjcbqonynrqmah.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzeXdsb3lqY2Jxb255bnJxbWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0MDQ0MjEsImV4cCI6MjEwNTk4MDQyMX0.gdhQ7Wq74mldbT695vr2DvXQBqVBpEejAwCZ4I2fF2Q';
@@ -469,6 +469,108 @@ export async function deleteBlog(id: string): Promise<{ success: boolean; messag
       const { error } = await supabase.from('blogs').delete().eq('id', id);
       if (error) throw error;
       return { success: true, message: 'Blog deleted successfully!' };
+    } catch (err: any) {
+      console.error('Supabase delete failed:', err);
+      return { success: false, message: `DB Error: ${err.message}` };
+    }
+  }
+  return { success: false, message: 'Supabase not configured' };
+}
+
+const toHotelRow = (hotel: Partial<Hotel>) => ({
+  name: hotel.name,
+  slug: hotel.slug,
+  city: hotel.location,
+  category: hotel.category,
+  star_rating: hotel.starRating,
+  price_per_night: hotel.pricePerNight,
+  original_price: hotel.originalPrice || null,
+  image_url: hotel.imageUrl,
+  description: hotel.description || null,
+  amenities: hotel.amenities,
+  destination_id: hotel.destinationId || null,
+  is_featured: hotel.isFeatured,
+});
+
+/**
+ * Fetch all hotels
+ */
+export async function getHotels(): Promise<Hotel[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('hotels')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return data.map((h: any) => ({
+          id: h.id,
+          name: h.name,
+          slug: h.slug,
+          location: h.city,
+          category: h.category,
+          starRating: h.star_rating,
+          pricePerNight: Number(h.price_per_night),
+          originalPrice: h.original_price ? Number(h.original_price) : undefined,
+          imageUrl: h.image_url,
+          description: h.description || '',
+          amenities: h.amenities || [],
+          destinationId: h.destination_id,
+          isFeatured: h.is_featured,
+          createdAt: h.created_at,
+        }));
+      }
+    } catch (err) {
+      console.warn('Supabase fetch hotels failed');
+    }
+  }
+  return [];
+}
+
+/**
+ * Admin: Create New Hotel
+ */
+export async function createHotel(newHotel: Omit<Hotel, 'id'>): Promise<{ success: boolean; message: string }> {
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('hotels').insert([toHotelRow(newHotel)]);
+      if (error) throw error;
+      return { success: true, message: 'New hotel added successfully!' };
+    } catch (err: any) {
+      console.error('Supabase hotel insert failed:', err);
+      return { success: false, message: `DB Error: ${err.message || 'Check browser console for details'}` };
+    }
+  }
+  return { success: false, message: 'Supabase not configured' };
+}
+
+/**
+ * Admin: Update Hotel
+ */
+export async function updateHotel(id: string, updatedHotel: Partial<Hotel>): Promise<{ success: boolean; message: string }> {
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('hotels').update(toHotelRow(updatedHotel)).eq('id', id);
+      if (error) throw error;
+      return { success: true, message: 'Hotel updated successfully!' };
+    } catch (err: any) {
+      console.error('Supabase update failed:', err);
+      return { success: false, message: `DB Error: ${err.message}` };
+    }
+  }
+  return { success: false, message: 'Supabase not configured' };
+}
+
+/**
+ * Admin: Delete Hotel
+ */
+export async function deleteHotel(id: string): Promise<{ success: boolean; message: string }> {
+  if (supabase) {
+    try {
+      const { error } = await supabase.from('hotels').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true, message: 'Hotel deleted successfully!' };
     } catch (err: any) {
       console.error('Supabase delete failed:', err);
       return { success: false, message: `DB Error: ${err.message}` };

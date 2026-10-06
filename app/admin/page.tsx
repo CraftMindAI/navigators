@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase, getAllInquiries, createTour, getTours, updateTour, deleteTour, createDestination, getDestinations, updateDestination, deleteDestination, deleteInquiry, createBlog, getBlogs, updateBlog, deleteBlog } from '@/lib/supabase';
-import { Inquiry, TourPackage, Destination, Blog } from '@/types';
-import { ShieldAlert, RefreshCw, Phone, Mail, Calendar, User, CheckCircle2, Clock, ArrowLeft, PlusCircle, Trash2, LogOut, MapPin, DollarSign, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { supabase, getAllInquiries, createTour, getTours, updateTour, deleteTour, createDestination, getDestinations, updateDestination, deleteDestination, deleteInquiry, createBlog, getBlogs, updateBlog, deleteBlog, getHotels, createHotel, updateHotel, deleteHotel } from '@/lib/supabase';
+import { Inquiry, TourPackage, Destination, Blog, Hotel } from '@/types';
+import { ShieldAlert, RefreshCw, Phone, Mail, Calendar, User, CheckCircle2, Clock, ArrowLeft, PlusCircle, Trash2, LogOut, MapPin, DollarSign, Sparkles, Image as ImageIcon, Hotel as HotelIcon, Star } from 'lucide-react';
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,7 +12,7 @@ export default function AdminPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'leads' | 'create-tour' | 'create-place' | 'create-blog' | 'manage-tours' | 'manage-places' | 'manage-blogs'>('leads');
+  const [activeTab, setActiveTab] = useState<'leads' | 'create-tour' | 'create-place' | 'create-blog' | 'manage-tours' | 'manage-places' | 'manage-blogs' | 'manage-hotels' | 'create-hotel'>('leads');
 
   // Admin Tours State
   const [adminTours, setAdminTours] = useState<TourPackage[]>([]);
@@ -28,6 +28,11 @@ export default function AdminPage() {
   const [adminBlogs, setAdminBlogs] = useState<Blog[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(false);
   const [editingBlogId, setEditingBlogId] = useState<string | null>(null);
+
+  // Admin Hotels State
+  const [adminHotels, setAdminHotels] = useState<Hotel[]>([]);
+  const [loadingHotels, setLoadingHotels] = useState(false);
+  const [editingHotelId, setEditingHotelId] = useState<string | null>(null);
   // Leads State
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
@@ -66,7 +71,51 @@ export default function AdminPage() {
   const [blogSubmitting, setBlogSubmitting] = useState(false);
   const [blogMsg, setBlogMsg] = useState('');
 
+  // New Hotel Form State
+  const [hotelName, setHotelName] = useState('');
+  const [hotelLocation, setHotelLocation] = useState('');
+  const [hotelCategory, setHotelCategory] = useState<'domestic' | 'international'>('domestic');
+  const [hotelStars, setHotelStars] = useState('3');
+  const [hotelPrice, setHotelPrice] = useState('');
+  const [hotelOriginalPrice, setHotelOriginalPrice] = useState('');
+  const [hotelImageUrl, setHotelImageUrl] = useState('');
+  const [hotelDescription, setHotelDescription] = useState('');
+  const [hotelAmenities, setHotelAmenities] = useState('');
+  const [hotelDestinationId, setHotelDestinationId] = useState('');
+  const [hotelFeatured, setHotelFeatured] = useState(false);
+  const [hotelSubmitting, setHotelSubmitting] = useState(false);
+  const [hotelMsg, setHotelMsg] = useState('');
+
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const handleHotelImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setHotelMsg('Uploading image...');
+    try {
+      if (!supabase) throw new Error('Supabase client not initialized');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('tour-images')
+        .upload(`hotel-${fileName}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('tour-images').getPublicUrl(`hotel-${fileName}`);
+      setHotelImageUrl(data.publicUrl);
+      setHotelMsg('Image uploaded successfully!');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      setHotelMsg(`Error uploading image: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const handleBlogImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,6 +212,7 @@ export default function AdminPage() {
       fetchAdminTours();
       fetchAdminDestinations();
       fetchAdminBlogs();
+      fetchAdminHotels();
     }
   }, []);
 
@@ -187,6 +237,13 @@ export default function AdminPage() {
     setLoadingBlogs(false);
   };
 
+  const fetchAdminHotels = async () => {
+    setLoadingHotels(true);
+    const data = await getHotels();
+    setAdminHotels(data);
+    setLoadingHotels(false);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
@@ -205,6 +262,7 @@ export default function AdminPage() {
       fetchAdminTours();
       fetchAdminDestinations();
       fetchAdminBlogs();
+      fetchAdminHotels();
       return;
     }
 
@@ -222,6 +280,7 @@ export default function AdminPage() {
         fetchAdminTours();
         fetchAdminDestinations();
         fetchAdminBlogs();
+        fetchAdminHotels();
       }
     } else {
       setLoginError('Database connection not established.');
@@ -474,6 +533,89 @@ export default function AdminPage() {
     }
   };
 
+  const resetHotelForm = () => {
+    setEditingHotelId(null);
+    setHotelName('');
+    setHotelLocation('');
+    setHotelCategory('domestic');
+    setHotelStars('3');
+    setHotelPrice('');
+    setHotelOriginalPrice('');
+    setHotelImageUrl('');
+    setHotelDescription('');
+    setHotelAmenities('');
+    setHotelDestinationId('');
+    setHotelFeatured(false);
+  };
+
+  const handleCreateHotel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHotelSubmitting(true);
+    setHotelMsg('');
+
+    const hotelData = {
+      name: hotelName,
+      location: hotelLocation,
+      category: hotelCategory,
+      starRating: parseInt(hotelStars) || 3,
+      pricePerNight: parseFloat(hotelPrice) || 0,
+      originalPrice: hotelOriginalPrice ? parseFloat(hotelOriginalPrice) : undefined,
+      description: hotelDescription,
+      amenities: toLines(hotelAmenities),
+      destinationId: hotelDestinationId || null,
+      isFeatured: hotelFeatured,
+    };
+
+    let res;
+    if (editingHotelId) {
+      res = await updateHotel(editingHotelId, {
+        ...hotelData,
+        imageUrl: hotelImageUrl || undefined,
+      });
+    } else {
+      const baseSlug = hotelName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      const randomSuffix = Math.random().toString(36).substring(2, 6);
+      res = await createHotel({
+        ...hotelData,
+        slug: `${baseSlug}-${randomSuffix}`,
+        imageUrl: hotelImageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+      });
+    }
+
+    setHotelMsg(res.message);
+    setHotelSubmitting(false);
+
+    if (res.success) {
+      fetchAdminHotels();
+      if (!editingHotelId) resetHotelForm();
+    }
+  };
+
+  const handleEditHotel = (hotel: Hotel) => {
+    setEditingHotelId(hotel.id!);
+    setHotelName(hotel.name);
+    setHotelLocation(hotel.location);
+    setHotelCategory(hotel.category);
+    setHotelStars(hotel.starRating.toString());
+    setHotelPrice(hotel.pricePerNight.toString());
+    setHotelOriginalPrice(hotel.originalPrice ? hotel.originalPrice.toString() : '');
+    setHotelImageUrl(hotel.imageUrl);
+    setHotelDescription(hotel.description || '');
+    setHotelAmenities(hotel.amenities.join('\n'));
+    setHotelDestinationId(hotel.destinationId || '');
+    setHotelFeatured(!!hotel.isFeatured);
+    setHotelMsg('');
+    setActiveTab('create-hotel');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteHotel = async (id: string) => {
+    if (confirm('Are you sure you want to delete this hotel?')) {
+      await deleteHotel(id);
+      fetchAdminHotels();
+    }
+  };
+
   // If NOT authenticated, show Admin Login Portal
   if (!isAuthenticated) {
     return (
@@ -645,6 +787,28 @@ export default function AdminPage() {
           >
             <PlusCircle className="w-4 h-4" />
             <span>Add Blog</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('manage-hotels')}
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-hotels' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
+              }`}
+          >
+            <HotelIcon className="w-4 h-4" />
+            <span>Manage Hotels</span>
+          </button>
+
+          <button
+            onClick={() => {
+              resetHotelForm();
+              setHotelMsg('');
+              setActiveTab('create-hotel');
+            }}
+            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-hotel' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
+              }`}
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>Add Hotel</span>
           </button>
         </div>
 
@@ -914,6 +1078,85 @@ export default function AdminPage() {
                                 onClick={() => blog.id && handleDeleteBlog(blog.id)}
                                 className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
                                 title="Delete Blog"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 1.8: MANAGE HOTELS */}
+        {activeTab === 'manage-hotels' && (
+          <div>
+            {loadingHotels ? (
+              <div className="text-center py-20">
+                <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-xs text-brand-muted">Fetching hotels from database...</p>
+              </div>
+            ) : adminHotels.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
+                <HotelIcon className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-brand-ink mb-1">No Hotels Found</h3>
+                <p className="text-xs text-brand-muted mb-4">You haven't added any hotels yet.</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4">Image</th>
+                        <th className="px-6 py-4">Hotel & Location</th>
+                        <th className="px-6 py-4">Stars</th>
+                        <th className="px-6 py-4">Price / Night</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {adminHotels.map((hotel) => (
+                        <tr key={hotel.id} className="hover:bg-gray-100/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <img src={hotel.imageUrl} alt={hotel.name} className="w-16 h-12 object-cover rounded-lg" />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="font-bold text-brand-ink text-sm mb-1">
+                              {hotel.name}
+                              {hotel.isFeatured && (
+                                <span className="ml-2 align-middle bg-brand-orange/15 text-brand-orange px-2 py-0.5 rounded-full text-[10px] font-bold">Featured</span>
+                              )}
+                            </div>
+                            <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3"/> {hotel.location}</div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-0.5">
+                              {Array.from({ length: hotel.starRating }).map((_, i) => (
+                                <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-semibold text-brand-blue">
+                            ₹{hotel.pricePerNight.toLocaleString('en-IN')}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button
+                                onClick={() => handleEditHotel(hotel)}
+                                className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-brand-ink rounded-lg transition-colors font-bold"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => hotel.id && handleDeleteHotel(hotel.id)}
+                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
+                                title="Delete Hotel"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -1407,6 +1650,208 @@ export default function AdminPage() {
                 className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
               >
                 {blogSubmitting ? 'Saving Blog...' : (editingBlogId ? 'UPDATE BLOG POST' : 'PUBLISH BLOG')}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 5: CREATE / EDIT HOTEL */}
+        {activeTab === 'create-hotel' && (
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-3xl shadow-2xl">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                <HotelIcon className="w-5 h-5 text-brand-blue" /> {editingHotelId ? 'Edit Hotel' : 'Add New Hotel'}
+              </h3>
+              {editingHotelId && (
+                <button
+                  onClick={() => {
+                    resetHotelForm();
+                    setHotelMsg('');
+                  }}
+                  className="text-xs text-brand-muted hover:text-brand-ink underline"
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-brand-muted mb-6">{editingHotelId ? 'Update the details for this hotel.' : 'Fill in the hotel details below to add it to your website.'}</p>
+
+            {hotelMsg && (
+              <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{hotelMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateHotel} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Hotel Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={hotelName}
+                  onChange={(e) => setHotelName(e.target.value)}
+                  placeholder="e.g. The Himalayan Retreat Resort"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Location / City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={hotelLocation}
+                    onChange={(e) => setHotelLocation(e.target.value)}
+                    placeholder="e.g. Manali, Himachal Pradesh"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
+                  <select
+                    value={hotelCategory}
+                    onChange={(e) => setHotelCategory(e.target.value as any)}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  >
+                    <option value="domestic">Domestic (India)</option>
+                    <option value="international">International</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Star Rating *</label>
+                  <select
+                    value={hotelStars}
+                    onChange={(e) => setHotelStars(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>{n} Star</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Price per Night (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={0}
+                    value={hotelPrice}
+                    onChange={(e) => setHotelPrice(e.target.value)}
+                    placeholder="4999"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Original Price (₹)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={hotelOriginalPrice}
+                    onChange={(e) => setHotelOriginalPrice(e.target.value)}
+                    placeholder="6999"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={hotelImageUrl}
+                    onChange={(e) => setHotelImageUrl(e.target.value)}
+                    placeholder="Paste image URL here..."
+                    className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleHotelImageUpload}
+                      disabled={isUploadingImage}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      title="Upload Image"
+                    />
+                    <button
+                      type="button"
+                      disabled={isUploadingImage}
+                      className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                    >
+                      <ImageIcon className="w-4 h-4" />
+                      {isUploadingImage ? (
+                        <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        'Upload'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Destination (optional)</label>
+                <select
+                  value={hotelDestinationId}
+                  onChange={(e) => setHotelDestinationId(e.target.value)}
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                >
+                  <option value="">— None —</option>
+                  {adminDestinations.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Description</label>
+                <textarea
+                  rows={4}
+                  value={hotelDescription}
+                  onChange={(e) => setHotelDescription(e.target.value)}
+                  placeholder="Short description of the property, rooms and surroundings..."
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Amenities (one per line)</label>
+                <textarea
+                  rows={4}
+                  value={hotelAmenities}
+                  onChange={(e) => setHotelAmenities(e.target.value)}
+                  placeholder={'Free Wi-Fi\nComplimentary breakfast\nSwimming pool'}
+                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                />
+              </div>
+
+              <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hotelFeatured}
+                  onChange={(e) => setHotelFeatured(e.target.checked)}
+                  className="w-4 h-4 accent-brand-blue"
+                />
+                Mark as featured hotel
+              </label>
+
+              <button
+                type="submit"
+                disabled={hotelSubmitting || isUploadingImage}
+                className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+              >
+                {hotelSubmitting ? 'Saving Hotel...' : (editingHotelId ? 'UPDATE HOTEL' : 'ADD HOTEL')}
               </button>
             </form>
           </div>
