@@ -52,7 +52,7 @@ export default function FlightsPage() {
         <div className="container-bb">
           <SectionTitle light="Popular" bold="Flight Routes" />
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[30px]">
-            {POPULAR_FLIGHT_ROUTES.map(({ from, to }) => {
+            {POPULAR_FLIGHT_ROUTES?.map(({ from, to }) => {
               const a = city(from);
               const b = city(to);
               return (
@@ -84,7 +84,7 @@ export default function FlightsPage() {
         <div className="container-bb">
           <SectionTitle light="Why Book" bold="Flights With Us" />
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 lg:divide-x divide-[#ddd] gap-y-8">
-            {PERKS.map(({ Icon, title, text }) => (
+            {PERKS?.map(({ Icon, title, text }) => (
               <div key={title} className="text-center px-6">
                 <Icon className="w-11 h-11 mx-auto text-brand-orange" strokeWidth={1.3} />
                 <h3 className="text-sm text-brand-ink mt-3">{title}</h3>

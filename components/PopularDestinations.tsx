@@ -55,7 +55,7 @@ export default function PopularDestinations() {
     async function loadDestinations() {
       const data = await getDestinations();
       // Ensure we display destinations with valid images
-      const enhanced = data.map((d) => {
+      const enhanced = data?.map((d) => {
         const meta = DESTINATION_META[d.slug] || DESTINATION_META['sikkim-tour-package'];
         return {
           ...d,
@@ -110,7 +110,7 @@ export default function PopularDestinations() {
               ref={scrollContainerRef}
               className="flex gap-[30px] overflow-x-auto pb-2 pt-1 px-[2px] snap-x snap-mandatory scroll-smooth no-scrollbar"
             >
-              {destinations.map((dest) => {
+              {destinations?.map((dest) => {
                 const meta = DESTINATION_META[dest.slug];
                 return (
                   <div key={dest.id} className="w-[85%] sm:w-[calc(50%-15px)] lg:w-[calc(25%-23px)] snap-start shrink-0">

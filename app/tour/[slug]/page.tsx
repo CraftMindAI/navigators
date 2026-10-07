@@ -176,7 +176,7 @@ export default function TourDetailPage() {
               <div className={panelCls}>
                 <SectionTitle light="Curated" bold="Highlights" className="!text-left !mb-5" />
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {tour.highlights.map((h, i) => (
+                  {tour.highlights?.map((h, i) => (
                     <li key={i} className="flex items-start gap-2.5 text-sm text-brand-ink">
                       <CheckCircle2 className="w-4 h-4 text-brand-green flex-shrink-0 mt-0.5" />
                       <span>{h}</span>
@@ -191,7 +191,7 @@ export default function TourDetailPage() {
               <SectionTitle light="What's" bold="Included" className="!text-left !mb-5" />
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-5 mb-5 pb-5 border-b border-[#ddd] sm:divide-x divide-[#ddd]">
-                {INCLUDED.map(({ Icon, title, sub }) => (
+                {INCLUDED?.map(({ Icon, title, sub }) => (
                   <div key={title} className="text-center px-2">
                     <Icon className="w-9 h-9 text-brand-orange mx-auto mb-2" strokeWidth={1.3} />
                     <span className="block text-sm font-medium text-brand-ink">{title}</span>
@@ -202,7 +202,7 @@ export default function TourDetailPage() {
 
               {tour.inclusions && tour.inclusions.length > 0 && (
                 <ul className="space-y-2">
-                  {tour.inclusions.map((inc, idx) => (
+                  {tour.inclusions?.map((inc, idx) => (
                     <li key={idx} className="flex items-start gap-2 text-sm text-brand-ink">
                       <CheckCircle2 className="w-3.5 h-3.5 text-brand-green flex-shrink-0 mt-[3px]" />
                       <span>{inc}</span>
@@ -218,7 +218,7 @@ export default function TourDetailPage() {
                 <SectionTitle light="Day-by-Day" bold="Itinerary" className="!text-left !mb-5" />
 
                 <div className="space-y-2.5">
-                  {tour.itinerary.map((item) => (
+                  {tour.itinerary?.map((item) => (
                     <div key={item.day} className="border border-[#ddd] rounded-sm overflow-hidden bg-white">
                       <button
                         onClick={() => setActiveDay(activeDay === item.day ? null : item.day)}

@@ -74,7 +74,7 @@ export default function BlogsPage() {
           />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[30px]">
-            {blogs.map((post) => (
+            {blogs?.map((post) => (
               <Link
                 href={`/news/${post.slug}`}
                 key={post.id}

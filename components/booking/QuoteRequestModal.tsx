@@ -23,7 +23,7 @@ export default function QuoteRequestModal({ request, onClose }: { request: Quote
 
   if (!request) return null;
 
-  const summaryText = request.summary.map((s) => `${s.label}: ${s.value}`).join('\n');
+  const summaryText = request.summary?.map((s) => `${s.label}: ${s.value}`).join('\n');
 
   const close = () => {
     setDone(false);
@@ -67,7 +67,7 @@ export default function QuoteRequestModal({ request, onClose }: { request: Quote
           <div className="rounded bg-brand-blueLight border border-brand-blue/20 p-3.5 mb-5">
             <p className="font-medium text-brand-heading text-sm mb-1.5">{request.title}</p>
             <dl className="grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-xs">
-              {request.summary.map((s) => (
+              {request.summary?.map((s) => (
                 <React.Fragment key={s.label}>
                   <dt className="text-slate-500">{s.label}</dt>
                   <dd className="text-brand-ink font-semibold">{s.value}</dd>

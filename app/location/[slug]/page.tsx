@@ -85,7 +85,7 @@ export default function LocationPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[30px]">
-              {tours.map((t) => (
+              {tours?.map((t) => (
                 <TourPackageCard
                   key={t.id}
                   tour={t}

@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       if (error) {
         console.error('Error fetching subscribers:', error);
       } else if (data) {
-        subscriberEmails = data.map((sub) => sub.email);
+        subscriberEmails = data?.map((sub) => sub.email);
       }
     }
 

@@ -86,7 +86,7 @@ export default function FlightSearchForm({ onRequest }: { onRequest: (r: QuoteRe
   const visibleSegments = tripType === 'multi' ? segments : segments.slice(0, 1);
 
   const updateSegment = (i: number, patch: Partial<Segment>) =>
-    setSegments((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+    setSegments((prev) => prev?.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,8 +102,8 @@ export default function FlightSearchForm({ onRequest }: { onRequest: (r: QuoteRe
     if (tripType === 'round' && !returnDate) return setError('Please select Return Date.');
 
     const tripLabel = { oneway: 'One Way', round: 'Round Trip', multi: 'Multi City' }[tripType];
-    const route = visibleSegments.map((s) => `${s.from!.code} → ${s.to!.code}`).join(', ');
-    const summary: QuoteRequest['summary'] = visibleSegments.map((s, i) => ({
+    const route = visibleSegments?.map((s) => `${s.from!.code} → ${s.to!.code}`).join(', ');
+    const summary: QuoteRequest['summary'] = visibleSegments?.map((s, i) => ({
       label: tripType === 'multi' ? `Flight ${i + 1}` : 'Departure',
       value: `${s.from!.city} (${s.from!.code}) → ${s.to!.city} (${s.to!.code}) · ${formatDisplayDate(s.date)}`,
     }));
@@ -141,7 +141,7 @@ export default function FlightSearchForm({ onRequest }: { onRequest: (r: QuoteRe
             <Counter label="Infant" hint="Below 2 Y" value={infants} min={0} max={adults} onChange={setInfants} />
           </div>
           <div className="mt-4 space-y-2">
-            {CABIN_CLASSES.map((c) => (
+            {CABIN_CLASSES?.map((c) => (
               <label key={c} className="flex items-center gap-2.5 text-sm text-brand-ink cursor-pointer">
                 <input type="radio" name="cabin" checked={cabin === c} onChange={() => setCabin(c)} className="w-4 h-4 accent-brand-blue" />
                 {c}
@@ -160,7 +160,7 @@ export default function FlightSearchForm({ onRequest }: { onRequest: (r: QuoteRe
     <form onSubmit={handleSubmit} className="md:relative md:pb-12">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4 md:mb-2.5 md:px-4">
         <div className="flex flex-wrap gap-2">
-          {TRIP_TYPES.map((t) => (
+          {TRIP_TYPES?.map((t) => (
             <PillRadio key={t.key} checked={tripType === t.key} onChange={() => setTripType(t.key)}>
               {t.label}
             </PillRadio>
@@ -170,7 +170,7 @@ export default function FlightSearchForm({ onRequest }: { onRequest: (r: QuoteRe
       </div>
 
       <div className="space-y-3">
-        {visibleSegments.map((seg, i) => (
+        {visibleSegments?.map((seg, i) => (
           <FieldRow
             key={i}
             className={

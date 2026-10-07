@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, ChevronLeft, ChevronRight, ChevronsRight, Headphones, Hotel, Map, Mountain } from 'lucide-react';
 import { TourPackage } from '@/types';
-import { getTours, submitInquiry } from '@/lib/supabase';
+import { getTours, submitCallbackRequest } from '@/lib/supabase';
 import { siteConfig } from '@/config/siteConfig';
 import { TRENDING_PACKAGES, WELCOME } from '@/data/travelContent';
 import {
@@ -92,7 +92,7 @@ export default function HomePage() {
 
   const submitCallback = async (e: React.FormEvent) => {
     e.preventDefault();
-    await submitInquiry({ name: 'Website call-back request', email: '', phone: `+91 ${callbackPhone}`, tourTitle: 'Call-back request', message: 'Requested a call back from the home page.' });
+    await submitCallbackRequest(callbackPhone, 'home page');
     setCallbackSent(true);
     setCallbackPhone('');
   };
@@ -116,7 +116,7 @@ export default function HomePage() {
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div ref={offersRef} className="flex gap-[30px] overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth">
-              {OFFERS.map((o) => (
+              {OFFERS?.map((o) => (
                 <div key={o.heading} className="snap-start shrink-0 w-[85%] sm:w-[calc(50%-15px)] lg:w-[calc(25%-23px)] flex flex-col">
                   <button
                     type="button"
@@ -171,7 +171,7 @@ export default function HomePage() {
         <div className="container-bb">
           <SectionTitle light="Holiday" bold="Category" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-[24px] md:gap-[30px]">
-            {HOLIDAY_CATEGORIES.map((c, i) => {
+            {HOLIDAY_CATEGORIES?.map((c, i) => {
               const wide = i === 0 || i === 5;
               const href = tileHref(c);
               const body = (
@@ -262,7 +262,7 @@ export default function HomePage() {
         <div className="container-bb">
           <SectionTitle light="Top Selling" bold="Holiday Packages" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[30px]">
-            {TRENDING_PACKAGES.map((p) => (
+            {TRENDING_PACKAGES?.map((p) => (
               <PackageCard
                 key={p.title}
                 pkg={{ title: p.title, imageUrl: p.image, durationNights: p.nights, durationDays: p.days }}
@@ -275,7 +275,7 @@ export default function HomePage() {
                 }
               />
             ))}
-            {tours.slice(0, 4).map((t) => (
+            {tours.slice(0, 4)?.map((t) => (
               <PackageCard
                 key={t.id}
                 pkg={{
@@ -294,11 +294,11 @@ export default function HomePage() {
       </section>
 
       {/* ---------- Holiday Destinations In India ---------- */}
-      <section id="destinations" className="bg-brand-cream py-12">
+      <section id="destinations" className="bg-brand-cream py-12 scroll-mt-28">
         <div className="container-bb">
           <SectionTitle light="Holiday" bold="Destinations In India" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-[30px] gap-y-4">
-            {DOMESTIC_TILES.map((t) => (
+            {DOMESTIC_TILES?.map((t) => (
               <DestinationTile key={t.title} tile={t} onEnquire={() => enquire(`Holiday: ${t.title}`, [{ label: 'Destination', value: t.title }])} />
             ))}
           </div>
@@ -307,11 +307,11 @@ export default function HomePage() {
       </section>
 
       {/* ---------- International Holiday Destination ---------- */}
-      <section className="bg-brand-cream py-12 mt-6">
+      <section id="international-destinations" className="bg-brand-cream py-12 mt-6 scroll-mt-28">
         <div className="container-bb">
           <SectionTitle light="International" bold="Holiday Destination" />
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-[30px] gap-y-4">
-            {INTERNATIONAL_TILES.map((t) => (
+            {INTERNATIONAL_TILES?.map((t) => (
               <DestinationTile key={t.title} tile={t} onEnquire={() => enquire(`International: ${t.title}`, [{ label: 'Destination', value: t.title }])} />
             ))}
           </div>
@@ -352,7 +352,7 @@ export default function HomePage() {
           </div>
           <div className="grid md:grid-cols-2 gap-8 items-stretch">
             <div>
-              {WHY_BLOCKS.map((b) => (
+              {WHY_BLOCKS?.map((b) => (
                 <div key={b.title} className={`${b.color} text-white px-3 py-4`}>
                   <h3 className="text-xl mb-3">{b.title}</h3>
                   <p className="text-sm leading-[1.5]">{b.text}</p>
@@ -360,7 +360,7 @@ export default function HomePage() {
               ))}
             </div>
             <div className="relative min-h-[300px] mx-0 md:mx-8">
-              {WHY_IMAGES.map((src, i) => (
+              {WHY_IMAGES?.map((src, i) => (
                 <img
                   key={src}
                   src={src}
@@ -395,7 +395,7 @@ export default function HomePage() {
             <p className="text-base text-brand-ink mt-2">Handcrafted mountain circuits with 24/7 on-tour support.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-3 mb-8">
-            {FEATURED_TRIPS.map((t, i) => (
+            {FEATURED_TRIPS?.map((t, i) => (
               <button
                 key={t.tab}
                 onClick={() => setTripTab(i)}
@@ -408,13 +408,13 @@ export default function HomePage() {
             ))}
           </div>
           <div className="grid lg:grid-cols-[1fr_1fr_1.15fr] gap-5 items-start">
-            {trip.images.map((src) => (
+            {trip.images?.map((src) => (
               <img key={src} src={src} alt={trip.title} className="hidden sm:block w-full h-[360px] object-cover" />
             ))}
             <div>
               <h3 className="text-[26px] md:text-[30px] font-bold text-brand-heading leading-tight">{trip.title}</h3>
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {trip.tags.map((tag) => (
+                {trip.tags?.map((tag) => (
                   <span key={tag} className="bg-[#e9e9e9] text-[11px] text-brand-ink px-2 py-1">
                     {tag}
                   </span>
@@ -460,7 +460,7 @@ export default function HomePage() {
         <div className="container-bb">
           <h2 className="text-center text-[24px] md:text-[32px] font-light text-brand-ink mb-8">We navigate every detail and we are here for you</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 lg:divide-x divide-[#ddd] gap-y-8">
-            {SERVICE_PILLARS.map((p, i) => {
+            {SERVICE_PILLARS?.map((p, i) => {
               const Icon = PILLAR_ICONS[i];
               return (
                 <div key={p.title} className="text-center px-6">

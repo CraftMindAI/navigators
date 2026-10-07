@@ -33,7 +33,7 @@ export default function BookingWidget({ initialTab = 'flight', tabs }: { initial
       {/* Tab card — floats over the banner on desktop */}
       <div className="relative z-10 md:max-w-[895px] mx-auto bg-white md:rounded-md md:shadow-[0_2px_10px_rgba(0,0,0,0.12)] border-b md:border-0 border-[#e5e5e5]">
         <div className="flex overflow-x-auto no-scrollbar">
-          {visibleTabs.map(({ key, label, Icon, MobileIcon, color }) => {
+          {visibleTabs?.map(({ key, label, Icon, MobileIcon, color }) => {
             const isActive = active === key;
             return (
               <button

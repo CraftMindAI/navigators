@@ -50,7 +50,7 @@ export function PackageCard({ pkg, onEnquire }: { pkg: PackageCardData; onEnquir
           )}
         </h3>
         <div className="flex items-center gap-2.5 text-brand-blue mb-2">
-          {AMENITIES.map(({ Icon, label }) => (
+          {AMENITIES?.map(({ Icon, label }) => (
             <span key={label} title={label} className="w-[22px] h-[22px] flex items-center justify-center">
               <Icon className="w-5 h-5" strokeWidth={2.2} />
             </span>

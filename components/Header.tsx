@@ -2,17 +2,28 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Mail, Phone, Facebook, Instagram, ChevronDown, Menu, X, Shield, Eye, EyeOff } from 'lucide-react';
+import { Mail, Phone, Facebook, Instagram, ChevronDown, ChevronsRight, Menu, X, Shield, Eye, EyeOff } from 'lucide-react';
 import { siteConfig } from '@/config/siteConfig';
-import { supabase } from '@/lib/supabase';
+import { supabase, getDestinations } from '@/lib/supabase';
+import type { Destination } from '@/types';
 import { DESTINATION_GROUPS } from '@/data/travelContent';
 
 const regionHref = (slug?: string) => (slug ? `/location/${slug}` : '/#destinations');
+
+/** Max destinations listed per column in the Destination menu; the rest are behind "… Destination »". */
+const MENU_LIMIT = 10;
+
+const DESTINATION_MENU = [
+  { category: 'domestic', title: 'India', more: 'India Destination', moreHref: '/#destinations' },
+  { category: 'international', title: 'International', more: 'International Destination', moreHref: '/#international-destinations' },
+] as const;
 
 export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [tourDropdownOpen, setTourDropdownOpen] = useState(false);
+  const [destDropdownOpen, setDestDropdownOpen] = useState(false);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [authModal, setAuthModal] = useState(false);
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
@@ -171,6 +182,12 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
     setAuthLoading(false);
   };
 
+  useEffect(() => {
+    getDestinations().then(setDestinations);
+  }, []);
+
+  const destinationsIn = (category: Destination['category']) => destinations.filter((d) => d.category === category);
+
   const openQuote = () => (onOpenInquiry ? onOpenInquiry() : (window.location.href = '/contact'));
 
   const navLink = (active = false) =>
@@ -226,12 +243,12 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                 </button>
                 <div className="absolute top-full right-0 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
                   <div className="w-[720px] grid grid-cols-3 gap-6 p-6 bg-white border-t-2 border-brand-orange shadow-widget">
-                    {DESTINATION_GROUPS.map((group) => (
+                    {DESTINATION_GROUPS?.map((group) => (
                       <div key={group.title}>
                         <h4 className="text-[15px] font-medium text-brand-blue mb-0.5">{group.title}</h4>
                         <p className="text-[11px] text-brand-muted mb-3">{group.subtitle}</p>
                         <ul className="space-y-1.5">
-                          {group.regions.map((r) => (
+                          {group.regions?.map((r) => (
                             <li key={r.name}>
                               <Link href={regionHref(r.slug)} className="text-sm text-brand-ink hover:text-brand-orange">
                                 {r.name}
@@ -244,11 +261,40 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                   </div>
                 </div>
               </div>
-              <Link href="/flights" className={navLink()}>Flight</Link>
               <Link href="/hotels" className={navLink()}>Hotel</Link>
-              <Link href="/#destinations" className={navLink()}>
-                Destination <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
-              </Link>
+              <div className="relative group">
+                <Link href="/#destinations" className={navLink()}>
+                  Destination <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-brand-orange group-hover:rotate-180 transition-transform" />
+                </Link>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50">
+                  {/* Caret pointing at the menu item */}
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-0 h-0 border-x-[9px] border-x-transparent border-b-[9px] border-b-white drop-shadow-[0_-1px_0_rgba(0,0,0,0.06)]" />
+                  <div className="w-[560px] bg-white rounded-md shadow-widget px-12 py-8">
+                    <div className="grid grid-cols-2 gap-x-14">
+                      {DESTINATION_MENU?.map((col) => (
+                        <div key={col.category}>
+                          <h4 className="inline-block text-[19px] text-brand-ink pr-6 pb-1 mb-3 border-b-2 border-brand-green">{col.title}</h4>
+                          <ul className="space-y-[13px]">
+                            {destinationsIn(col.category).slice(0, MENU_LIMIT)?.map((d) => (
+                              <li key={d.id}>
+                                <Link href={regionHref(d.slug)} className="text-[14px] text-[#444] hover:text-brand-orange transition-colors">
+                                  {d.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                          <Link href={col.moreHref} className="mt-6 inline-flex items-center text-[14px] text-brand-navy hover:text-brand-orange">
+                            {col.more} <ChevronsRight className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                    <Link href="/#destinations" className="mt-5 inline-flex items-center text-[14px] text-brand-navy hover:text-brand-orange">
+                      All Destination <ChevronsRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <Link href="/news" className={navLink()}>Travel Journal</Link>
               <Link href="/contact" className={navLink()}>Contact Us</Link>
               {(isAdmin || user) ? (
@@ -310,11 +356,11 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
               </button>
               {tourDropdownOpen && (
                 <div className="px-5 py-3 space-y-3 bg-[#fafafa]">
-                  {DESTINATION_GROUPS.map((group) => (
+                  {DESTINATION_GROUPS?.map((group) => (
                     <div key={group.title}>
                       <p className="text-xs font-medium text-brand-blue mb-1">{group.title}</p>
                       <div className="grid grid-cols-2 gap-1">
-                        {group.regions.map((r) => (
+                        {group.regions?.map((r) => (
                           <Link key={r.name} href={regionHref(r.slug)} onClick={() => setMobileMenuOpen(false)} className="py-1 text-sm text-brand-ink">
                             {r.name}
                           </Link>
@@ -324,13 +370,40 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                   ))}
                 </div>
               )}
+              <button
+                onClick={() => setDestDropdownOpen(!destDropdownOpen)}
+                className="w-full flex items-center justify-between px-5 py-3 text-[15px] text-brand-ink"
+              >
+                <span>Destination</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${destDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {destDropdownOpen && (
+                <div className="px-5 py-3 space-y-4 bg-[#fafafa]">
+                  {DESTINATION_MENU?.map((col) => (
+                    <div key={col.category}>
+                      <p className="inline-block text-sm text-brand-ink border-b-2 border-brand-green pb-0.5 mb-2">{col.title}</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {destinationsIn(col.category).slice(0, MENU_LIMIT)?.map((d) => (
+                          <Link key={d.id} href={regionHref(d.slug)} onClick={() => setMobileMenuOpen(false)} className="py-1 text-sm text-[#444]">
+                            {d.name}
+                          </Link>
+                        ))}
+                      </div>
+                      <Link href={col.moreHref} onClick={() => setMobileMenuOpen(false)} className="mt-1 inline-flex items-center text-sm text-brand-navy">
+                        {col.more} <ChevronsRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  ))}
+                  <Link href="/#destinations" onClick={() => setMobileMenuOpen(false)} className="inline-flex items-center text-sm text-brand-navy">
+                    All Destination <ChevronsRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              )}
               {[
-                { href: '/flights', label: 'Flight' },
                 { href: '/hotels', label: 'Hotel' },
-                { href: '/#destinations', label: 'Destination' },
                 { href: '/news', label: 'Travel Journal' },
                 { href: '/contact', label: 'Contact Us' },
-              ].map((l) => (
+              ]?.map((l) => (
                 <Link
                   key={l.href}
                   href={l.href}

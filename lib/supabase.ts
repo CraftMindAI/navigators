@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { TourPackage, Inquiry, Destination, Blog, Hotel } from '@/types';
+import { TourPackage, Inquiry, Destination, Blog, Hotel, HotelItineraryDay, HOTEL_REGIONS } from '@/types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zsywloyjcbqonynrqmah.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzeXdsb3lqY2Jxb255bnJxbWFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0MDQ0MjEsImV4cCI6MjEwNTk4MDQyMX0.gdhQ7Wq74mldbT695vr2DvXQBqVBpEejAwCZ4I2fF2Q';
@@ -26,7 +26,7 @@ export async function getTours(): Promise<TourPackage[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        return data.map((t: any) => ({
+        return data?.map((t: any) => ({
           id: t.id,
           title: t.title,
           slug: t.slug,
@@ -70,7 +70,7 @@ export async function getDestinations(): Promise<Destination[]> {
         .order('name', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        return data.map((d: any) => ({
+        return data?.map((d: any) => ({
           id: d.id,
           name: d.name,
           slug: d.slug,
@@ -246,6 +246,24 @@ export async function submitInquiry(inquiry: Inquiry): Promise<{ success: boolea
   return { success: true, message: 'Your booking inquiry has been recorded successfully!' };
 }
 
+/** Inquiry title that marks a "Call Me Now" request; the admin lists these in their own tab. */
+export const CALLBACK_REQUEST_TITLE = 'Call-back request';
+
+export const isCallbackRequest = (inquiry: Inquiry) => inquiry.tourTitle === CALLBACK_REQUEST_TITLE;
+
+/**
+ * Submit a "Call Me Now" request (phone only). `source` says which form it came from.
+ */
+export async function submitCallbackRequest(phone: string, source: string): Promise<{ success: boolean; message: string }> {
+  return submitInquiry({
+    name: 'Website call-back request',
+    email: '',
+    phone: `+91 ${phone}`,
+    tourTitle: CALLBACK_REQUEST_TITLE,
+    message: `Requested a call back from the ${source}.`,
+  });
+}
+
 /**
  * Submit general contact message
  */
@@ -282,7 +300,7 @@ export async function getAllInquiries(): Promise<Inquiry[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return data.map((i: any) => ({
+        return data?.map((i: any) => ({
           id: i.id,
           name: i.name,
           email: i.email,
@@ -376,7 +394,7 @@ export async function getBlogs(): Promise<Blog[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return data.map((b: any) => ({
+        return data?.map((b: any) => ({
           id: b.id,
           title: b.title,
           slug: b.slug,
@@ -481,7 +499,9 @@ const toHotelRow = (hotel: Partial<Hotel>) => ({
   name: hotel.name,
   slug: hotel.slug,
   city: hotel.location,
-  category: hotel.category,
+  // category is kept in sync with region for older code paths
+  category: hotel.region ? (hotel.region === 'international' ? 'international' : 'domestic') : hotel.category,
+  region: hotel.region,
   star_rating: hotel.starRating,
   price_per_night: hotel.pricePerNight,
   original_price: hotel.originalPrice || null,
@@ -492,8 +512,20 @@ const toHotelRow = (hotel: Partial<Hotel>) => ({
   is_featured: hotel.isFeatured,
 });
 
+const regionRank = (h: Hotel) => HOTEL_REGIONS.findIndex((r) => r.value === h.region);
+
+/** North India -> South India -> International; featured first within a region, then newest. */
+export function sortHotels(hotels: Hotel[]): Hotel[] {
+  return [...hotels].sort(
+    (a, b) =>
+      regionRank(a) - regionRank(b) ||
+      Number(!!b.isFeatured) - Number(!!a.isFeatured) ||
+      (b.createdAt || '').localeCompare(a.createdAt || '')
+  );
+}
+
 /**
- * Fetch all hotels
+ * Fetch all hotels, in display order (see sortHotels)
  */
 export async function getHotels(): Promise<Hotel[]> {
   if (supabase) {
@@ -504,12 +536,13 @@ export async function getHotels(): Promise<Hotel[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return data.map((h: any) => ({
+        return sortHotels(data?.map((h: any) => ({
           id: h.id,
           name: h.name,
           slug: h.slug,
           location: h.city,
           category: h.category,
+          region: h.region || (h.category === 'international' ? 'international' : 'north'),
           starRating: h.star_rating,
           pricePerNight: Number(h.price_per_night),
           originalPrice: h.original_price ? Number(h.original_price) : undefined,
@@ -519,7 +552,7 @@ export async function getHotels(): Promise<Hotel[]> {
           destinationId: h.destination_id,
           isFeatured: h.is_featured,
           createdAt: h.created_at,
-        }));
+        })));
       }
     } catch (err) {
       console.warn('Supabase fetch hotels failed');
@@ -529,14 +562,22 @@ export async function getHotels(): Promise<Hotel[]> {
 }
 
 /**
+ * Get single hotel by slug
+ */
+export async function getHotelBySlug(slug: string): Promise<Hotel | null> {
+  const hotels = await getHotels();
+  return hotels.find((h) => h.slug === slug) || null;
+}
+
+/**
  * Admin: Create New Hotel
  */
-export async function createHotel(newHotel: Omit<Hotel, 'id'>): Promise<{ success: boolean; message: string }> {
+export async function createHotel(newHotel: Omit<Hotel, 'id'>): Promise<{ success: boolean; message: string; id?: string }> {
   if (supabase) {
     try {
-      const { error } = await supabase.from('hotels').insert([toHotelRow(newHotel)]);
+      const { data, error } = await supabase.from('hotels').insert([toHotelRow(newHotel)]).select('id').single();
       if (error) throw error;
-      return { success: true, message: 'New hotel added successfully!' };
+      return { success: true, message: 'New hotel added successfully!', id: data.id };
     } catch (err: any) {
       console.error('Supabase hotel insert failed:', err);
       return { success: false, message: `DB Error: ${err.message || 'Check browser console for details'}` };
@@ -574,6 +615,69 @@ export async function deleteHotel(id: string): Promise<{ success: boolean; messa
     } catch (err: any) {
       console.error('Supabase delete failed:', err);
       return { success: false, message: `DB Error: ${err.message}` };
+    }
+  }
+  return { success: false, message: 'Supabase not configured' };
+}
+
+/**
+ * Fetch a hotel's day-wise itinerary
+ */
+export async function getHotelItinerary(hotelId: string): Promise<HotelItineraryDay[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('hotel_itineraries')
+        .select('*')
+        .eq('hotel_id', hotelId)
+        .order('day_number', { ascending: true });
+
+      if (!error && data) {
+        return data?.map((d: any) => ({
+          id: d.id,
+          hotelId: d.hotel_id,
+          dayNumber: d.day_number,
+          location: d.location || '',
+          title: d.title,
+          nights: d.nights ?? undefined,
+          description: d.description || '',
+          meals: d.meals || '',
+        }));
+      }
+    } catch (err) {
+      console.warn('Supabase fetch hotel itinerary failed');
+    }
+  }
+  return [];
+}
+
+/**
+ * Admin: Replace a hotel's whole itinerary with the given days (empty list clears it)
+ */
+export async function saveHotelItinerary(hotelId: string, days: HotelItineraryDay[]): Promise<{ success: boolean; message: string }> {
+  if (supabase) {
+    try {
+      const { error: deleteError } = await supabase.from('hotel_itineraries').delete().eq('hotel_id', hotelId);
+      if (deleteError) throw deleteError;
+
+      if (days.length > 0) {
+        const { error } = await supabase.from('hotel_itineraries').insert(
+          days?.map((d) => ({
+            hotel_id: hotelId,
+            day_number: d.dayNumber,
+            location: d.location || null,
+            title: d.title,
+            nights: d.nights ?? null,
+            description: d.description || null,
+            meals: d.meals || null,
+          }))
+        );
+        if (error) throw error;
+      }
+      return { success: true, message: `Itinerary saved (${days.length} day${days.length === 1 ? '' : 's'}).` };
+    } catch (err: any) {
+      console.error('Supabase itinerary save failed:', err);
+      return { success: false, message: `Itinerary DB Error: ${err.message}` };
     }
   }
   return { success: false, message: 'Supabase not configured' };

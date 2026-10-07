@@ -93,7 +93,7 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-[30px]">
             {/* Contact Details */}
             <div className="space-y-4">
-              {details.map(({ Icon, title, body }) => (
+              {details?.map(({ Icon, title, body }) => (
                 <div key={title} className="bg-white border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)] rounded-sm p-4 flex items-start gap-4">
                   <Icon className="w-8 h-8 text-brand-orange flex-shrink-0" strokeWidth={1.3} />
                   <div className="min-w-0">

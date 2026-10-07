@@ -2,9 +2,98 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { supabase, getAllInquiries, createTour, getTours, updateTour, deleteTour, createDestination, getDestinations, updateDestination, deleteDestination, deleteInquiry, createBlog, getBlogs, updateBlog, deleteBlog, getHotels, createHotel, updateHotel, deleteHotel } from '@/lib/supabase';
-import { Inquiry, TourPackage, Destination, Blog, Hotel } from '@/types';
-import { ShieldAlert, RefreshCw, Phone, Mail, Calendar, User, CheckCircle2, Clock, ArrowLeft, PlusCircle, Trash2, LogOut, MapPin, DollarSign, Sparkles, Image as ImageIcon, Hotel as HotelIcon, Star } from 'lucide-react';
+import { supabase, getAllInquiries, createTour, getTours, updateTour, deleteTour, createDestination, getDestinations, updateDestination, deleteDestination, deleteInquiry, createBlog, getBlogs, updateBlog, deleteBlog, isCallbackRequest, getHotels, createHotel, updateHotel, deleteHotel, getHotelItinerary, saveHotelItinerary } from '@/lib/supabase';
+import { Inquiry, TourPackage, Destination, Blog, Hotel, HotelItineraryDay, HotelRegion, HOTEL_REGIONS } from '@/types';
+import { ShieldAlert, RefreshCw, Phone, Mail, Calendar, User, CheckCircle2, Clock, ArrowLeft, PlusCircle, Trash2, LogOut, MapPin, DollarSign, Sparkles, Image as ImageIcon, Hotel as HotelIcon, Star, FileSpreadsheet, Download, AlertTriangle, PhoneCall, Menu, X, BookOpen, type LucideIcon } from 'lucide-react';
+
+/** Excel header (lower-cased, spaces stripped) -> itinerary field. */
+const ITINERARY_COLUMNS: Record<string, keyof HotelItineraryDay> = {
+  day: 'dayNumber',
+  daynumber: 'dayNumber',
+  location: 'location',
+  title: 'title',
+  nights: 'nights',
+  description: 'description',
+  meals: 'meals',
+};
+
+/** Parse the first sheet of an itinerary .xlsx (see public/samples/hotel-itinerary-sample.xlsx). */
+async function parseItineraryFile(file: File): Promise<HotelItineraryDay[]> {
+  const { readSheet } = await import('read-excel-file/browser');
+  const rows = await readSheet(file);
+  if (rows.length < 2) throw new Error('The sheet is empty. Add a header row and at least one day.');
+
+  const fields = rows[0]?.map((h) => ITINERARY_COLUMNS[String(h ?? '').toLowerCase().replace(/\s+/g, '')]);
+  if (!fields.includes('dayNumber') || !fields.includes('title')) {
+    throw new Error('Header row must include "Day" and "Title" columns. Download the sample file for the format.');
+  }
+
+  const days: HotelItineraryDay[] = [];
+  rows.slice(1).forEach((row, i) => {
+    if (row.every((cell) => cell === null || String(cell).trim() === '')) return;
+    const day: Record<string, string | number | undefined> = {};
+    row.forEach((cell, c) => {
+      const field = fields[c];
+      if (field && cell !== null) day[field] = typeof cell === 'string' ? cell.trim() : String(cell);
+    });
+
+    const excelRow = i + 2;
+    const dayNumber = Number(day.dayNumber);
+    if (!Number.isInteger(dayNumber) || dayNumber < 1) throw new Error(`Row ${excelRow}: "Day" must be a whole number like 1, 2, 3.`);
+    if (!day.title) throw new Error(`Row ${excelRow}: "Title" is required.`);
+    const nights = day.nights !== undefined && day.nights !== '' ? Number(day.nights) : undefined;
+    if (nights !== undefined && (!Number.isInteger(nights) || nights < 0)) throw new Error(`Row ${excelRow}: "Nights" must be a whole number.`);
+
+    days.push({
+      dayNumber,
+      title: String(day.title),
+      location: day.location ? String(day.location) : '',
+      nights,
+      description: day.description ? String(day.description) : '',
+      meals: day.meals ? String(day.meals) : '',
+    });
+  });
+
+  if (days.length === 0) throw new Error('No itinerary rows found below the header.');
+  const seen = new Set<number>();
+  for (const d of days) {
+    if (seen.has(d.dayNumber)) throw new Error(`Day ${d.dayNumber} appears more than once.`);
+    seen.add(d.dayNumber);
+  }
+  return days.sort((a, b) => a.dayNumber - b.dayNumber);
+}
+
+/** Popup that hosts the add / edit forms. Closes on the X button or Escape. */
+function FormModal({ onClose, wide = false, children }: { onClose: () => void; wide?: boolean; children: React.ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/50 p-4 sm:p-8" role="dialog" aria-modal="true">
+      <div className={`relative w-full mx-auto ${wide ? 'max-w-3xl' : 'max-w-xl'}`}>
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-brand-ink"
+          aria-label="Close"
+        >
+          <X className="w-5 h-5" />
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,7 +101,11 @@ export default function AdminPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  const [activeTab, setActiveTab] = useState<'leads' | 'create-tour' | 'create-place' | 'create-blog' | 'manage-tours' | 'manage-places' | 'manage-blogs' | 'manage-hotels' | 'create-hotel'>('leads');
+  const [activeTab, setActiveTab] = useState<'leads' | 'callbacks' | 'manage-tours' | 'manage-places' | 'manage-hotels' | 'manage-blogs'>('leads');
+  // Add / edit forms open in a popup over the Manage pages
+  const [formModal, setFormModal] = useState<'tour' | 'place' | 'hotel' | 'blog' | null>(null);
+  const [notice, setNotice] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Admin Tours State
   const [adminTours, setAdminTours] = useState<TourPackage[]>([]);
@@ -74,7 +167,7 @@ export default function AdminPage() {
   // New Hotel Form State
   const [hotelName, setHotelName] = useState('');
   const [hotelLocation, setHotelLocation] = useState('');
-  const [hotelCategory, setHotelCategory] = useState<'domestic' | 'international'>('domestic');
+  const [hotelRegion, setHotelRegion] = useState<HotelRegion>('north');
   const [hotelStars, setHotelStars] = useState('3');
   const [hotelPrice, setHotelPrice] = useState('');
   const [hotelOriginalPrice, setHotelOriginalPrice] = useState('');
@@ -85,6 +178,27 @@ export default function AdminPage() {
   const [hotelFeatured, setHotelFeatured] = useState(false);
   const [hotelSubmitting, setHotelSubmitting] = useState(false);
   const [hotelMsg, setHotelMsg] = useState('');
+  const [hotelItinerary, setHotelItinerary] = useState<HotelItineraryDay[]>([]);
+  const [itineraryChanged, setItineraryChanged] = useState(false);
+  const [itineraryError, setItineraryError] = useState('');
+  const [itineraryFileName, setItineraryFileName] = useState('');
+  const [loadingItinerary, setLoadingItinerary] = useState(false);
+
+  const handleItineraryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file after fixing it
+    if (!file) return;
+
+    setItineraryError('');
+    try {
+      const days = await parseItineraryFile(file);
+      setHotelItinerary(days);
+      setItineraryChanged(true);
+      setItineraryFileName(file.name);
+    } catch (err: any) {
+      setItineraryError(err.message || 'Could not read this file. Please upload a .xlsx file.');
+    }
+  };
 
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -306,8 +420,15 @@ export default function AdminPage() {
     }
   };
 
+  const closeFormModal = () => setFormModal(null);
+
+  const finishForm = (message: string) => {
+    setFormModal(null);
+    setNotice(message);
+  };
+
   /** Textarea value (one item per line) -> trimmed, non-empty list. */
-  const toLines = (text: string) => text.split('\n').map((l) => l.trim()).filter(Boolean);
+  const toLines = (text: string) => text.split('\n')?.map((l) => l.trim()).filter(Boolean);
 
   const handleCreateTour = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -379,6 +500,10 @@ export default function AdminPage() {
 
     setTourMsg(res.message);
     setTourSubmitting(false);
+    if (res.success) {
+      fetchAdminTours();
+      finishForm(res.message);
+    }
     
     if (res.success && !editingTourId) {
       setTourTitle('');
@@ -407,8 +532,8 @@ export default function AdminPage() {
     setTourHighlight2(tour.ownHighlights?.[1] || '');
     setTourInclusions((tour.ownInclusions || []).join('\n'));
     setTourDestinationId(tour.destinationId || '');
-    setActiveTab('create-tour');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTourMsg('');
+    setFormModal('tour');
   };
 
   const handleDeleteTour = async (id: string) => {
@@ -451,6 +576,10 @@ export default function AdminPage() {
 
     setPlaceMsg(res.message);
     setPlaceSubmitting(false);
+    if (res.success) {
+      fetchAdminDestinations();
+      finishForm(res.message);
+    }
 
     if (res.message.includes('successfully') && !editingDestinationId) {
       setPlaceSubmitted(true);
@@ -468,8 +597,9 @@ export default function AdminPage() {
     setPlaceImageUrl(place.imageUrl);
     setPlaceHighlights((place.highlights || []).join('\n'));
     setPlaceInclusions((place.inclusions || []).join('\n'));
-    setActiveTab('create-place');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setPlaceMsg('');
+    setPlaceSubmitted(false);
+    setFormModal('place');
   };
 
   const handleDeletePlace = async (id: string) => {
@@ -507,6 +637,10 @@ export default function AdminPage() {
 
     setBlogMsg(res.message);
     setBlogSubmitting(false);
+    if (res.success) {
+      fetchAdminBlogs();
+      finishForm(res.message);
+    }
     
     if (res.success && !editingBlogId) {
       setBlogTitle('');
@@ -522,8 +656,8 @@ export default function AdminPage() {
     setBlogAuthor(blog.author);
     setBlogContent(blog.content);
     setBlogImageUrl(blog.image_url);
-    setActiveTab('create-blog');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setBlogMsg('');
+    setFormModal('blog');
   };
 
   const handleDeleteBlog = async (id: string) => {
@@ -537,7 +671,7 @@ export default function AdminPage() {
     setEditingHotelId(null);
     setHotelName('');
     setHotelLocation('');
-    setHotelCategory('domestic');
+    setHotelRegion('north');
     setHotelStars('3');
     setHotelPrice('');
     setHotelOriginalPrice('');
@@ -546,6 +680,10 @@ export default function AdminPage() {
     setHotelAmenities('');
     setHotelDestinationId('');
     setHotelFeatured(false);
+    setHotelItinerary([]);
+    setItineraryChanged(false);
+    setItineraryError('');
+    setItineraryFileName('');
   };
 
   const handleCreateHotel = async (e: React.FormEvent) => {
@@ -556,7 +694,8 @@ export default function AdminPage() {
     const hotelData = {
       name: hotelName,
       location: hotelLocation,
-      category: hotelCategory,
+      category: hotelRegion === 'international' ? ('international' as const) : ('domestic' as const),
+      region: hotelRegion,
       starRating: parseInt(hotelStars) || 3,
       pricePerNight: parseFloat(hotelPrice) || 0,
       originalPrice: hotelOriginalPrice ? parseFloat(hotelOriginalPrice) : undefined,
@@ -567,6 +706,7 @@ export default function AdminPage() {
     };
 
     let res;
+    let hotelId = editingHotelId;
     if (editingHotelId) {
       res = await updateHotel(editingHotelId, {
         ...hotelData,
@@ -580,14 +720,31 @@ export default function AdminPage() {
         slug: `${baseSlug}-${randomSuffix}`,
         imageUrl: hotelImageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
       });
+      hotelId = res.id || null;
     }
 
-    setHotelMsg(res.message);
+    let message = res.message;
+    let itinerarySaved = true;
+    // Only touch the itinerary when a file was uploaded or it was cleared
+    if (res.success && hotelId && itineraryChanged) {
+      const itRes = await saveHotelItinerary(hotelId, hotelItinerary);
+      itinerarySaved = itRes.success;
+      message = `${message} ${itRes.message}`;
+      if (itRes.success) setItineraryChanged(false);
+    }
+
+    setHotelMsg(message);
     setHotelSubmitting(false);
 
     if (res.success) {
       fetchAdminHotels();
-      if (!editingHotelId) resetHotelForm();
+      if (itinerarySaved) finishForm(message);
+      if (!editingHotelId && itinerarySaved) {
+        resetHotelForm();
+      } else if (!editingHotelId && hotelId) {
+        // Hotel exists but the itinerary failed: switch to editing so a retry updates it instead of duplicating
+        setEditingHotelId(hotelId);
+      }
     }
   };
 
@@ -595,7 +752,7 @@ export default function AdminPage() {
     setEditingHotelId(hotel.id!);
     setHotelName(hotel.name);
     setHotelLocation(hotel.location);
-    setHotelCategory(hotel.category);
+    setHotelRegion(hotel.region);
     setHotelStars(hotel.starRating.toString());
     setHotelPrice(hotel.pricePerNight.toString());
     setHotelOriginalPrice(hotel.originalPrice ? hotel.originalPrice.toString() : '');
@@ -605,8 +762,17 @@ export default function AdminPage() {
     setHotelDestinationId(hotel.destinationId || '');
     setHotelFeatured(!!hotel.isFeatured);
     setHotelMsg('');
-    setActiveTab('create-hotel');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setHotelItinerary([]);
+    setItineraryChanged(false);
+    setItineraryError('');
+    setItineraryFileName('');
+    setFormModal('hotel');
+
+    setLoadingItinerary(true);
+    getHotelItinerary(hotel.id!).then((days) => {
+      setHotelItinerary(days);
+      setLoadingItinerary(false);
+    });
   };
 
   const handleDeleteHotel = async (id: string) => {
@@ -678,47 +844,39 @@ export default function AdminPage() {
     );
   }
 
-  // Admin Dashboard View
-  return (
-    <div className="min-h-screen bg-gray-50 text-brand-ink py-10 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8 pb-6 border-b border-gray-200">
-          <div>
-            <Link href="/" className="inline-flex items-center gap-1.5 text-xs text-brand-blue hover:underline mb-2">
-              <ArrowLeft className="w-4 h-4" /> Back to Main Site
-            </Link>
-            <div className="flex items-center gap-2">
-              <ShieldAlert className="w-7 h-7 text-brand-orange" />
-              <h1 className="text-2xl md:text-3xl font-black text-brand-ink">The Navigators Admin Dashboard</h1>
-            </div>
-            <p className="text-xs text-brand-muted mt-1">Manage lead inquiries, publish new tour packages, and add tourist places.</p>
-          </div>
+  type AdminTab = typeof activeTab;
+  type NavItem = {
+    tab: AdminTab;
+    label: string;
+    Icon: LucideIcon;
+    count?: number;
+    /** Button shown at the top of this page that opens the add form popup. */
+    add?: { label: string; onClick: () => void };
+  };
 
+  // "Call Me Now" requests are stored as inquiries but listed in their own tab
+  const callbackRequests = inquiries.filter(isCallbackRequest);
+  const leadInquiries = inquiries.filter((inq) => !isCallbackRequest(inq));
 
-        </div>
-
-        <div className="flex flex-wrap items-center bg-white p-1.5 rounded-2xl border border-gray-200 mb-8 max-w-4xl gap-2">
-          <button
-            onClick={() => setActiveTab('leads')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'leads' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <Clock className="w-4 h-4" />
-            <span>Lead Inquiries ({inquiries.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('manage-tours')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-tours' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Manage Tours</span>
-          </button>
-
-          <button
-            onClick={() => {
+  const NAV_SECTIONS: { title: string; items: NavItem[] }[] = [
+    {
+      title: 'Enquiries',
+      items: [
+        { tab: 'leads', label: 'Lead Inquiries', Icon: Clock, count: leadInquiries.length },
+        { tab: 'callbacks', label: 'Call Me Now', Icon: PhoneCall, count: callbackRequests.length },
+      ],
+    },
+    {
+      title: 'Content',
+      items: [
+        {
+          tab: 'manage-tours',
+          label: 'Tours',
+          Icon: Sparkles,
+          count: adminTours.length,
+          add: {
+            label: 'Add Tour',
+            onClick: () => {
               setEditingTourId(null);
               setTourTitle('');
               setTourLocation('');
@@ -729,88 +887,165 @@ export default function AdminPage() {
               setTourHighlight2('');
               setTourInclusions('');
               setTourDestinationId('');
-              setActiveTab('create-tour');
-            }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-tour' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Create Tour</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('manage-places')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-places' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <MapPin className="w-4 h-4" />
-            <span>Manage Places</span>
-          </button>
-
-          <button
-            onClick={() => {
+              setTourMsg('');
+              setFormModal('tour');
+            },
+          },
+        },
+        {
+          tab: 'manage-places',
+          label: 'Places',
+          Icon: MapPin,
+          count: adminDestinations.length,
+          add: {
+            label: 'Add Place',
+            onClick: () => {
               setEditingDestinationId(null);
               setPlaceName('');
               setPlaceImageUrl('');
               setPlaceHighlights('');
               setPlaceInclusions('');
               setPlaceSubmitted(false);
-              setActiveTab('create-place');
-            }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-place' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Add Place</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('manage-blogs')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-blogs' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>Manage Blogs</span>
-          </button>
-
-          <button
-            onClick={() => {
+              setPlaceMsg('');
+              setFormModal('place');
+            },
+          },
+        },
+        {
+          tab: 'manage-hotels',
+          label: 'Hotels',
+          Icon: HotelIcon,
+          count: adminHotels.length,
+          add: {
+            label: 'Add Hotel',
+            onClick: () => {
+              resetHotelForm();
+              setHotelMsg('');
+              setFormModal('hotel');
+            },
+          },
+        },
+        {
+          tab: 'manage-blogs',
+          label: 'Blogs',
+          Icon: BookOpen,
+          count: adminBlogs.length,
+          add: {
+            label: 'Add Blog',
+            onClick: () => {
               setEditingBlogId(null);
               setBlogTitle('');
               setBlogContent('');
               setBlogAuthor('');
               setBlogImageUrl('');
-              setActiveTab('create-blog');
-            }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-blog' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Add Blog</span>
-          </button>
+              setBlogMsg('');
+              setFormModal('blog');
+            },
+          },
+        },
+      ],
+    },
+  ];
 
-          <button
-            onClick={() => setActiveTab('manage-hotels')}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'manage-hotels' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <HotelIcon className="w-4 h-4" />
-            <span>Manage Hotels</span>
-          </button>
+  const activeItem = NAV_SECTIONS.flatMap((sec) => sec.items).find((item) => item.tab === activeTab);
 
-          <button
-            onClick={() => {
-              resetHotelForm();
-              setHotelMsg('');
-              setActiveTab('create-hotel');
-            }}
-            className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${activeTab === 'create-hotel' ? 'bg-brand-blue text-white shadow-glow' : 'text-brand-muted hover:text-brand-ink'
-              }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>Add Hotel</span>
-          </button>
+  const sidebar = (
+    <div className="h-full flex flex-col bg-white border-r border-gray-200">
+      <div className="px-5 py-5 border-b border-gray-200 flex items-center gap-2">
+        <ShieldAlert className="w-6 h-6 text-brand-orange shrink-0" />
+        <div className="min-w-0">
+          <p className="text-sm font-black text-brand-ink leading-tight">The Navigators</p>
+          <p className="text-[11px] text-brand-muted">Admin Dashboard</p>
         </div>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        {NAV_SECTIONS?.map((section) => (
+          <div key={section.title}>
+            <p className="px-3 mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-gray-400">{section.title}</p>
+            <ul className="space-y-0.5">
+              {section.items?.map(({ tab, label, Icon, count }) => {
+                const active = activeTab === tab;
+                return (
+                  <li key={tab}>
+                    <button
+                      onClick={() => {
+                        setActiveTab(tab);
+                        setNotice('');
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
+                        active ? 'bg-brand-blue text-white shadow-glow' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-ink'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      <span className="flex-1 text-left">{label}</span>
+                      {count !== undefined && (
+                        <span className={`min-w-[22px] px-1.5 py-0.5 rounded-full text-[10px] text-center ${active ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="border-t border-gray-200 p-3 space-y-1">
+        <Link href="/" className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100">
+          <ArrowLeft className="w-4 h-4" /> Back to Main Site
+        </Link>
+        <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50">
+          <LogOut className="w-4 h-4" /> Logout
+        </button>
+      </div>
+    </div>
+  );
+
+  // Admin Dashboard View
+  return (
+    <div className="min-h-screen bg-gray-50 text-brand-ink lg:flex">
+      {/* Desktop sidebar (sits below the 102px site header) */}
+      <aside className="hidden lg:block w-64 shrink-0 sticky top-[102px] h-[calc(100vh-102px)]">{sidebar}</aside>
+
+      {/* Mobile sidebar drawer */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          <div className="w-64 max-w-[80%] h-full shadow-2xl">{sidebar}</div>
+          <button className="flex-1 bg-black/40" aria-label="Close menu" onClick={() => setSidebarOpen(false)} />
+        </div>
+      )}
+
+      <main className="flex-1 min-w-0 px-4 py-6 lg:px-8 lg:py-8">
+        {/* Top bar */}
+        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-200">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-2 text-brand-ink" aria-label="Open menu">
+            <Menu className="w-6 h-6" />
+          </button>
+          <h1 className="text-xl md:text-2xl font-black text-brand-ink">{activeItem?.label}</h1>
+          {activeItem?.add && (
+            <button
+              onClick={activeItem.add.onClick}
+              className="ml-auto inline-flex items-center gap-2 bg-brand-blue text-white hover:brightness-110 font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-glow transition-all"
+            >
+              <PlusCircle className="w-4 h-4" />
+              {activeItem.add.label}
+            </button>
+          )}
+        </div>
+
+        {notice && (
+          <div className="p-3 mb-6 bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs rounded-xl flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="flex-1">{notice}</span>
+            <button onClick={() => setNotice('')} className="p-0.5 hover:text-emerald-900" aria-label="Dismiss">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* TAB 1: LEADS MANAGER */}
         {activeTab === 'leads' && (
@@ -820,7 +1055,7 @@ export default function AdminPage() {
                 <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs text-brand-muted">Fetching inquiries from database...</p>
               </div>
-            ) : inquiries.length === 0 ? (
+            ) : leadInquiries.length === 0 ? (
               <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
                 <Clock className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-brand-ink mb-1">No Inquiries Received Yet</h3>
@@ -841,7 +1076,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {inquiries.map((inq, idx) => (
+                      {leadInquiries?.map((inq, idx) => (
                         <tr key={inq.id || idx} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4 font-bold text-brand-ink">
                             <div className="flex items-center gap-2">
@@ -863,6 +1098,9 @@ export default function AdminPage() {
                           </td>
                           <td className="px-6 py-4 font-semibold text-brand-blue">
                             {inq.tourTitle || 'General Quote Inquiry'}
+                            {inq.message && (
+                              <div className="mt-1 text-[11px] font-normal text-brand-muted whitespace-pre-line max-w-xs">{inq.message}</div>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-gray-600">
                             <div>Date: {inq.travelDate || 'Flexible'}</div>
@@ -882,6 +1120,74 @@ export default function AdminPage() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 1.2: CALL ME NOW REQUESTS */}
+        {activeTab === 'callbacks' && (
+          <div>
+            {loadingLeads ? (
+              <div className="text-center py-20">
+                <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-xs text-brand-muted">Fetching call-back requests...</p>
+              </div>
+            ) : callbackRequests.length === 0 ? (
+              <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
+                <PhoneCall className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <h3 className="text-lg font-bold text-brand-ink mb-1">No Call-back Requests Yet</h3>
+                <p className="text-xs text-brand-muted">Numbers entered in the &quot;Call Me Now&quot; boxes on the website will appear here.</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4">Phone Number</th>
+                        <th className="px-6 py-4">Requested From</th>
+                        <th className="px-6 py-4">Requested At</th>
+                        <th className="px-6 py-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {callbackRequests?.map((req, idx) => (
+                        <tr key={req.id || idx} className="hover:bg-gray-100/50 transition-colors">
+                          <td className="px-6 py-4">
+                            <a href={`tel:${req.phone.replace(/\s+/g, '')}`} className="inline-flex items-center gap-2 font-bold text-sm text-brand-ink hover:text-brand-blue">
+                              <Phone className="w-4 h-4 text-emerald-500" />
+                              {req.phone}
+                            </a>
+                          </td>
+                          <td className="px-6 py-4 text-gray-600 capitalize">
+                            {req.message?.replace(/^Requested (an instant )?a? ?call back from the /, '').replace(/\.$/, '') || '—'}
+                          </td>
+                          <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+                            {req.createdAt ? new Date(req.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : '—'}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <a
+                                href={`tel:${req.phone.replace(/\s+/g, '')}`}
+                                className="px-3 py-1.5 bg-emerald-500/15 hover:bg-emerald-600 text-emerald-700 hover:text-white rounded-lg transition-colors font-bold"
+                              >
+                                Call
+                              </a>
+                              <button
+                                onClick={() => req.id && handleDeleteInquiry(req.id)}
+                                className="p-1.5 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
+                                title="Delete Request"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -921,7 +1227,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {adminTours.map((tour) => (
+                      {adminTours?.map((tour) => (
                         <tr key={tour.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={tour.imageUrl} alt={tour.title} className="w-16 h-12 object-cover rounded-lg" />
@@ -990,7 +1296,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {adminDestinations.map((place) => (
+                      {adminDestinations?.map((place) => (
                         <tr key={place.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={place.imageUrl} alt={place.name} className="w-16 h-12 object-cover rounded-lg" />
@@ -1055,7 +1361,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {adminBlogs.map((blog) => (
+                      {adminBlogs?.map((blog) => (
                         <tr key={blog.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={blog.image_url} alt={blog.title} className="w-16 h-12 object-cover rounded-lg" />
@@ -1115,13 +1421,14 @@ export default function AdminPage() {
                       <tr>
                         <th className="px-6 py-4">Image</th>
                         <th className="px-6 py-4">Hotel & Location</th>
+                        <th className="px-6 py-4">Region</th>
                         <th className="px-6 py-4">Stars</th>
                         <th className="px-6 py-4">Price / Night</th>
                         <th className="px-6 py-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {adminHotels.map((hotel) => (
+                      {adminHotels?.map((hotel) => (
                         <tr key={hotel.id} className="hover:bg-gray-100/50 transition-colors">
                           <td className="px-6 py-4">
                             <img src={hotel.imageUrl} alt={hotel.name} className="w-16 h-12 object-cover rounded-lg" />
@@ -1135,9 +1442,12 @@ export default function AdminPage() {
                             </div>
                             <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3"/> {hotel.location}</div>
                           </td>
+                          <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
+                            {HOTEL_REGIONS.find((r) => r.value === hotel.region)?.label}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-0.5">
-                              {Array.from({ length: hotel.starRating }).map((_, i) => (
+                              {Array.from({ length: hotel.starRating })?.map((_, i) => (
                                 <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                               ))}
                             </div>
@@ -1173,31 +1483,13 @@ export default function AdminPage() {
         )}
 
         {/* TAB 2: CREATE / EDIT NEW TOUR PACKAGE */}
-        {activeTab === 'create-tour' && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-3xl shadow-2xl">
-            <div className="flex items-center justify-between mb-1">
+        {formModal === 'tour' && (
+          <FormModal onClose={closeFormModal} wide>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
+            <div className="flex items-center justify-between mb-1 pr-10">
               <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingTourId ? 'Edit Tour Package' : 'Add New Tour Package'}
               </h3>
-              {editingTourId && (
-                <button 
-                  onClick={() => {
-                    setEditingTourId(null);
-                    setTourTitle('');
-                    setTourLocation('');
-                    setTourPrice('');
-                    setTourOriginalPrice('');
-                    setTourImageUrl('');
-                    setTourHighlight1('');
-                    setTourHighlight2('');
-                    setTourInclusions('');
-                    setTourDestinationId('');
-                  }}
-                  className="text-xs text-brand-muted hover:text-brand-ink underline"
-                >
-                  Cancel Edit
-                </button>
-              )}
             </div>
             <p className="text-xs text-brand-muted mb-6">{editingTourId ? 'Update the details for this tour package.' : 'Fill in the tour details below to publish a new package to your website.'}</p>
 
@@ -1340,7 +1632,7 @@ export default function AdminPage() {
                   className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 >
                   <option value="">— None —</option>
-                  {adminDestinations.map((d) => (
+                  {adminDestinations?.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
@@ -1388,30 +1680,17 @@ export default function AdminPage() {
               </button>
             </form>
           </div>
+          </FormModal>
         )}
 
         {/* TAB 3: CREATE NEW PLACE / DESTINATION */}
-        {activeTab === 'create-place' && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-xl shadow-2xl">
-            <div className="flex items-center justify-between mb-1">
+        {formModal === 'place' && (
+          <FormModal onClose={closeFormModal}>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
+            <div className="flex items-center justify-between mb-1 pr-10">
               <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-brand-blue" /> {editingDestinationId ? 'Edit Tourist Place' : 'Add New Tourist Place / Destination'}
               </h3>
-              {editingDestinationId && (
-                <button 
-                  onClick={() => {
-                    setEditingDestinationId(null);
-                    setPlaceName('');
-                    setPlaceImageUrl('');
-                    setPlaceHighlights('');
-                    setPlaceInclusions('');
-                    setPlaceSubmitted(false);
-                  }}
-                  className="text-xs text-brand-muted hover:text-brand-ink underline"
-                >
-                  Cancel Edit
-                </button>
-              )}
             </div>
             <p className="text-xs text-brand-muted mb-6">{editingDestinationId ? 'Update the details for this destination.' : 'Add a new destination card to the Popular Destinations grid on the home page.'}</p>
 
@@ -1536,29 +1815,17 @@ export default function AdminPage() {
               </>
             )}
           </div>
+          </FormModal>
         )}
 
         {/* TAB 4: CREATE NEW BLOG */}
-        {activeTab === 'create-blog' && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-xl shadow-2xl">
-            <div className="flex items-center justify-between mb-1">
+        {formModal === 'blog' && (
+          <FormModal onClose={closeFormModal}>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
+            <div className="flex items-center justify-between mb-1 pr-10">
               <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
                 <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}
               </h3>
-              {editingBlogId && (
-                <button 
-                  onClick={() => {
-                    setEditingBlogId(null);
-                    setBlogTitle('');
-                    setBlogContent('');
-                    setBlogAuthor('');
-                    setBlogImageUrl('');
-                  }}
-                  className="text-xs text-brand-muted hover:text-brand-ink underline"
-                >
-                  Cancel Edit
-                </button>
-              )}
             </div>
             <p className="text-xs text-brand-muted mb-6">{editingBlogId ? 'Update the details for this blog post.' : 'Write and publish a new blog post directly to your website.'}</p>
 
@@ -1653,26 +1920,17 @@ export default function AdminPage() {
               </button>
             </form>
           </div>
+          </FormModal>
         )}
 
         {/* TAB 5: CREATE / EDIT HOTEL */}
-        {activeTab === 'create-hotel' && (
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 max-w-3xl shadow-2xl">
-            <div className="flex items-center justify-between mb-1">
+        {formModal === 'hotel' && (
+          <FormModal onClose={closeFormModal} wide>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
+            <div className="flex items-center justify-between mb-1 pr-10">
               <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
                 <HotelIcon className="w-5 h-5 text-brand-blue" /> {editingHotelId ? 'Edit Hotel' : 'Add New Hotel'}
               </h3>
-              {editingHotelId && (
-                <button
-                  onClick={() => {
-                    resetHotelForm();
-                    setHotelMsg('');
-                  }}
-                  className="text-xs text-brand-muted hover:text-brand-ink underline"
-                >
-                  Cancel Edit
-                </button>
-              )}
             </div>
             <p className="text-xs text-brand-muted mb-6">{editingHotelId ? 'Update the details for this hotel.' : 'Fill in the hotel details below to add it to your website.'}</p>
 
@@ -1710,14 +1968,15 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Region *</label>
                   <select
-                    value={hotelCategory}
-                    onChange={(e) => setHotelCategory(e.target.value as any)}
+                    value={hotelRegion}
+                    onChange={(e) => setHotelRegion(e.target.value as HotelRegion)}
                     className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   >
-                    <option value="domestic">Domestic (India)</option>
-                    <option value="international">International</option>
+                    {HOTEL_REGIONS?.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -1730,7 +1989,7 @@ export default function AdminPage() {
                     onChange={(e) => setHotelStars(e.target.value)}
                     className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   >
-                    {[1, 2, 3, 4, 5].map((n) => (
+                    {[1, 2, 3, 4, 5]?.map((n) => (
                       <option key={n} value={n}>{n} Star</option>
                     ))}
                   </select>
@@ -1808,7 +2067,7 @@ export default function AdminPage() {
                   className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                 >
                   <option value="">— None —</option>
-                  {adminDestinations.map((d) => (
+                  {adminDestinations?.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
@@ -1836,6 +2095,92 @@ export default function AdminPage() {
                 />
               </div>
 
+              <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600">Itinerary (Day Wise) — Excel Upload</label>
+                    <p className="text-[11px] text-gray-400 mt-0.5">Columns: Day, Location, Title, Nights, Description, Meals. Uploading replaces the current itinerary.</p>
+                  </div>
+                  <a
+                    href="/samples/hotel-itinerary-sample.xlsx"
+                    download
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue hover:underline"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download sample Excel
+                  </a>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                      onChange={handleItineraryUpload}
+                      disabled={loadingItinerary}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      title="Upload itinerary Excel"
+                    />
+                    <button
+                      type="button"
+                      disabled={loadingItinerary}
+                      className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                      {hotelItinerary.length > 0 ? 'Replace Excel File' : 'Upload Excel File'}
+                    </button>
+                  </div>
+                  {itineraryFileName && <span className="text-[11px] text-brand-muted">{itineraryFileName}</span>}
+                  {hotelItinerary.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHotelItinerary([]);
+                        setItineraryChanged(true);
+                        setItineraryFileName('');
+                      }}
+                      className="text-xs text-red-500 hover:underline ml-auto"
+                    >
+                      Remove itinerary
+                    </button>
+                  )}
+                </div>
+
+                {itineraryError && (
+                  <div className="p-2.5 bg-red-50 border border-red-300 text-red-600 text-xs rounded-lg flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span>{itineraryError}</span>
+                  </div>
+                )}
+
+                {loadingItinerary ? (
+                  <p className="text-xs text-brand-muted">Loading saved itinerary...</p>
+                ) : hotelItinerary.length > 0 ? (
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-500 mb-1.5">
+                      {hotelItinerary.length} day{hotelItinerary.length === 1 ? '' : 's'}
+                      {itineraryChanged ? ' — will be saved when you submit' : ' — saved'}
+                    </p>
+                    <ol className="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg">
+                      {hotelItinerary?.map((d) => (
+                        <li key={d.dayNumber} className="px-3 py-2 text-xs">
+                          <div className="text-[11px] text-brand-muted">
+                            Day {d.dayNumber}{d.location ? ` / (${d.location})` : ''}
+                          </div>
+                          <div className="font-semibold text-brand-ink">
+                            {d.title}
+                            {d.nights ? <span className="font-normal text-brand-muted"> ({d.nights} Night{d.nights === 1 ? '' : 's'})</span> : null}
+                          </div>
+                          {d.description && <p className="text-gray-600 mt-0.5 line-clamp-2">{d.description}</p>}
+                          {d.meals && <p className="text-[11px] text-emerald-700 mt-0.5">{d.meals}</p>}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-gray-400">{itineraryChanged ? 'Itinerary will be removed when you submit.' : 'No itinerary added.'}</p>
+                )}
+              </div>
+
               <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer">
                 <input
                   type="checkbox"
@@ -1855,8 +2200,9 @@ export default function AdminPage() {
               </button>
             </form>
           </div>
+          </FormModal>
         )}
-      </div>
+      </main>
     </div>
   );
 }

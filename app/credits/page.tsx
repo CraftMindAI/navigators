@@ -22,7 +22,7 @@ export default function CreditsPage() {
     <div className="container-bb py-12">
       <SectionTitle light="Photo" bold="Credits" subtitle="Destination photos from Wikimedia Commons, used under their respective licences. Other photos via Unsplash." />
       <ul className="max-w-3xl mx-auto divide-y divide-[#eee] border border-[#ddd] bg-white">
-        {CREDITS.map((c) => (
+        {CREDITS?.map((c) => (
           <li key={c.file} className="flex items-center gap-4 p-3">
             <img src={`/images/destinations/${c.file}`} alt={c.subject} className="w-24 h-16 object-cover shrink-0" />
             <div className="text-sm">

@@ -52,12 +52,22 @@ export interface Destination {
   inclusions?: string[];
 }
 
+export type HotelRegion = 'north' | 'south' | 'international';
+
+/** Display order and labels for hotel regions: North India, then South India, then International. */
+export const HOTEL_REGIONS: { value: HotelRegion; label: string }[] = [
+  { value: 'north', label: 'North India' },
+  { value: 'south', label: 'South India' },
+  { value: 'international', label: 'International' },
+];
+
 export interface Hotel {
   id?: string;
   name: string;
   slug: string;
   location: string;
   category: 'domestic' | 'international';
+  region: HotelRegion;
   starRating: number;
   pricePerNight: number;
   originalPrice?: number;
@@ -67,6 +77,17 @@ export interface Hotel {
   destinationId?: string | null;
   isFeatured?: boolean;
   createdAt?: string;
+}
+
+export interface HotelItineraryDay {
+  id?: string;
+  hotelId?: string;
+  dayNumber: number;
+  location?: string;
+  title: string;
+  nights?: number;
+  description?: string;
+  meals?: string;
 }
 
 export interface Blog {

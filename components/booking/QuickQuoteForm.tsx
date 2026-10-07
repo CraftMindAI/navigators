@@ -33,7 +33,7 @@ const LABELS: Record<QuickQuoteKind, string> = {
 
 function holidayDestinations(kind: 'domestic' | 'luxury' | 'international') {
   const groups = kind === 'international' ? DESTINATION_GROUPS.slice(2) : kind === 'domestic' ? DESTINATION_GROUPS.slice(0, 2) : DESTINATION_GROUPS;
-  return groups.flatMap((g) => g.regions.map((r) => r.name));
+  return groups.flatMap((g) => g.regions?.map((r) => r.name));
 }
 
 export default function QuickQuoteForm({ kind, onRequest }: { kind: QuickQuoteKind; onRequest: (r: QuoteRequest) => void }) {
@@ -77,7 +77,7 @@ export default function QuickQuoteForm({ kind, onRequest }: { kind: QuickQuoteKi
     <Cell label={isHoliday ? 'Travellers' : 'Passengers'}>
       <CaretValue>
         <select value={people} onChange={(e) => setPeople(Number(e.target.value))} className="bg-transparent focus:outline-none cursor-pointer appearance-none">
-          {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+          {Array.from({ length: 20 }, (_, i) => i + 1)?.map((n) => (
             <option key={n} value={n}>
               {n} {isHoliday ? 'Traveller' : 'Passenger'}
               {n > 1 ? 's' : ''}
@@ -103,7 +103,7 @@ export default function QuickQuoteForm({ kind, onRequest }: { kind: QuickQuoteKi
           <Cell label="Destination">
             <select value={to} onChange={(e) => setTo(e.target.value)} className={`${BIG_SELECT} ${to ? '' : 'text-[#6c757d]'}`}>
               <option value="">Select Destination</option>
-              {destinations.map((d) => (
+              {destinations?.map((d) => (
                 <option key={d}>{d}</option>
               ))}
             </select>
@@ -112,7 +112,7 @@ export default function QuickQuoteForm({ kind, onRequest }: { kind: QuickQuoteKi
           <>
             <Cell label="Heli Service">
               <select value={to} onChange={(e) => setTo(e.target.value)} className={BIG_SELECT}>
-                {HELI_ROUTES.map((r) => (
+                {HELI_ROUTES?.map((r) => (
                   <option key={r}>{r}</option>
                 ))}
               </select>

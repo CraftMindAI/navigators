@@ -77,7 +77,7 @@ export default function HeroBanner({
   return (
     <section className="relative bg-white">
       <div className="relative h-[230px] sm:h-[320px] md:h-[435px] overflow-hidden">
-        {slides.map((s, i) => (
+        {slides?.map((s, i) => (
           <div key={s.image} className={`absolute inset-0 transition-opacity duration-1000 ${i === current ? 'opacity-100 z-[1]' : 'opacity-0'}`}>
             <img src={s.image} alt={`${s.title} ${s.title2}`} className="absolute inset-0 w-full h-full object-cover" />
             {/* White wash on the left, like the painted brush area of the reference banners */}

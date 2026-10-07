@@ -126,7 +126,7 @@ export default function BlogPostPage() {
       <div className="container-bb pt-8">
         <div className="max-w-[860px] mx-auto bg-white p-5 sm:p-8 rounded-sm border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)]">
           <div className="max-w-none text-brand-ink space-y-4">
-            {blog.content.split('\n').filter(p => p.trim() !== '').map((paragraph, idx) => (
+            {blog.content.split('\n').filter(p => p.trim() !== '')?.map((paragraph, idx) => (
               <p key={idx} className="text-sm sm:text-[15px] text-brand-ink leading-[1.7]">
                 {paragraph}
               </p>

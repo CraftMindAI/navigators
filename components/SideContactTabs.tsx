@@ -21,7 +21,7 @@ const TABS = [
 export default function SideContactTabs() {
   return (
     <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2.5">
-      {TABS.map(({ label, href, Icon, color, external }) => {
+      {TABS?.map(({ label, href, Icon, color, external }) => {
         const cls = `${color} text-white w-8 md:w-[33px] rounded-l-md shadow-md flex flex-col items-center justify-center gap-2 py-3 hover:w-10 transition-all`;
         const inner = (
           <>

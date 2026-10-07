@@ -262,7 +262,7 @@ export function SearchPicker<T>({
           </div>
           <ul className="max-h-72 overflow-y-auto py-1">
             {filtered.length === 0 && <li className="px-4 py-3 text-sm text-brand-muted">No matches found</li>}
-            {filtered.map((item) => (
+            {filtered?.map((item) => (
               <li key={getKey(item)}>
                 <button
                   type="button"

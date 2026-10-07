@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Phone, Facebook, Instagram, Heart, Headphones, ClipboardCheck, BadgeCheck, MessageCircle, ShieldCheck } from 'lucide-react';
-import { subscribeNewsletter, submitInquiry } from '@/lib/supabase';
+import { subscribeNewsletter, submitCallbackRequest } from '@/lib/supabase';
 import { siteConfig } from '@/config/siteConfig';
 
 const LINK_COLUMNS = [
@@ -73,7 +73,7 @@ export default function Footer() {
 
   const handleCallBack = async (e: React.FormEvent) => {
     e.preventDefault();
-    await submitInquiry({ name: 'Website call-back request', email: '', phone: `+91 ${phone}`, tourTitle: 'Call-back request', message: 'Requested an instant call back from the footer.' });
+    await submitCallbackRequest(phone, 'footer');
     setCallSent(true);
     setPhone('');
   };
@@ -88,7 +88,7 @@ export default function Footer() {
               { Icon: Headphones, top: '24/7', bottom: 'Support' },
               { Icon: ClipboardCheck, top: 'Customised', bottom: 'Itineraries' },
               { Icon: BadgeCheck, top: 'The Navigators', bottom: 'Verified' },
-            ].map(({ Icon, top, bottom }) => (
+            ]?.map(({ Icon, top, bottom }) => (
               <div key={top}>
                 <Icon className="w-10 h-10 mx-auto text-brand-orange mb-1.5" strokeWidth={1.3} />
                 <span className="block font-medium">{top}</span>
@@ -149,7 +149,7 @@ export default function Footer() {
       <div className="bg-[#f1f1f1]">
         <div className="bg-white">
           <div className="max-w-[1366px] mx-auto px-4 md:px-10 grid grid-cols-2 md:grid-cols-4">
-            {LINK_COLUMNS.map((c, i) => (
+            {LINK_COLUMNS?.map((c, i) => (
               <h4 key={c.title} className={`py-2.5 text-sm font-medium ${i === 0 ? 'text-brand-orange' : 'text-brand-ink'}`}>
                 {c.title}
               </h4>
@@ -157,10 +157,10 @@ export default function Footer() {
           </div>
         </div>
         <div className="max-w-[1366px] mx-auto px-4 md:px-10 py-4 grid grid-cols-2 md:grid-cols-4 gap-y-6">
-          {LINK_COLUMNS.map((c) => (
+          {LINK_COLUMNS?.map((c) => (
             <ul key={c.title} className="space-y-3">
               <li className="md:hidden text-sm font-medium text-brand-orange">{c.title}</li>
-              {c.links.map((l) => (
+              {c.links?.map((l) => (
                 <li key={l.label}>
                   <Link href={l.href} className="text-[13px] text-brand-nav hover:text-brand-orange">
                     {l.label}
@@ -218,7 +218,7 @@ export default function Footer() {
           <div>
             <p className="text-sm font-bold mb-2.5">Popular Destinations:</p>
             <div className="flex flex-wrap gap-1.5">
-              {POPULAR.map((p) => (
+              {POPULAR?.map((p) => (
                 <Link
                   key={p.label}
                   href={p.href}

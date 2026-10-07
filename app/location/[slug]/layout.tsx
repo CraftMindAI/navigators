@@ -5,7 +5,7 @@ export async function generateStaticParams() {
   const destinations = await getDestinations();
   const slugs = new Set([
     ...staticTourSlugs,
-    ...destinations.map((destination) => destination.slug),
+    ...destinations?.map((destination) => destination.slug),
   ]);
 
   return Array.from(slugs, (slug) => ({ slug }));

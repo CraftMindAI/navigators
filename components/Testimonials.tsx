@@ -63,7 +63,7 @@ export default function Testimonials() {
 
         {/* Testimonials Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-[30px]">
-          {TESTIMONIALS.map((item) => (
+          {TESTIMONIALS?.map((item) => (
             <div
               key={item.id}
               className="bg-white p-5 rounded-sm relative flex flex-col justify-between border border-[#ddd] shadow-[0_1px_4px_rgba(0,0,0,0.12)]"
@@ -73,7 +73,7 @@ export default function Testimonials() {
               <div>
                 {/* Star Row */}
                 <div className="flex items-center gap-1 mb-3">
-                  {[...Array(item.rating)].map((_, i) => (
+                  {[...Array(item.rating)]?.map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
@@ -104,7 +104,7 @@ export default function Testimonials() {
       <div className="bg-brand-cream mt-12 md:mt-16 py-10">
         <div className="container-bb">
           <div className="grid grid-cols-2 lg:grid-cols-4 lg:divide-x divide-[#ddd] gap-y-8">
-            {PILLARS.map(({ Icon, title, text }) => (
+            {PILLARS?.map(({ Icon, title, text }) => (
               <div key={title} className="text-center px-3 md:px-6">
                 <Icon className="w-11 h-11 mx-auto text-brand-orange" strokeWidth={1.3} />
                 <h4 className="text-sm font-medium text-brand-ink mt-3">{title}</h4>

@@ -46,7 +46,7 @@ export default function HotelSearchForm({ onRequest }: { onRequest: (r: QuoteReq
   const nights = checkIn && checkOut ? daysBetween(checkIn, checkOut) : 0;
 
   const updateRoom = (i: number, patch: Partial<Room>) =>
-    setRooms((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+    setRooms((prev) => prev?.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +62,7 @@ export default function HotelSearchForm({ onRequest }: { onRequest: (r: QuoteReq
         { label: 'City', value: city },
         { label: 'Check in', value: formatDisplayDate(checkIn) },
         { label: 'Check out', value: `${formatDisplayDate(checkOut)} (${nights} night${nights > 1 ? 's' : ''})` },
-        { label: 'Rooms', value: rooms.map((r, i) => `Room ${i + 1}: ${r.adults} Adult${r.adults > 1 ? 's' : ''}${r.children ? ` + ${r.children} Child` : ''}`).join(' · ') },
+        { label: 'Rooms', value: rooms?.map((r, i) => `Room ${i + 1}: ${r.adults} Adult${r.adults > 1 ? 's' : ''}${r.children ? ` + ${r.children} Child` : ''}`).join(' · ') },
         { label: 'Guests', value: String(guests) },
         { label: 'Nationality', value: nationality },
       ],
@@ -132,7 +132,7 @@ export default function HotelSearchForm({ onRequest }: { onRequest: (r: QuoteReq
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-              {rooms.map((room, i) => (
+              {rooms?.map((room, i) => (
                 <div key={i} className="border-b border-[#eee] last:border-0 pb-3 mb-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-brand-blue">Room {i + 1}</span>
@@ -171,7 +171,7 @@ export default function HotelSearchForm({ onRequest }: { onRequest: (r: QuoteReq
             onChange={(e) => setNationality(e.target.value)}
             className="w-full bg-transparent text-sm md:text-2xl text-[#6c757d] focus:outline-none cursor-pointer md:mt-1"
           >
-            {NATIONALITIES.map((n) => (
+            {NATIONALITIES?.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
