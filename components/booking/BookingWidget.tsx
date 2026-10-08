@@ -1,32 +1,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bus, Hotel, Plane, Ship, TrainFront, TreePalm, Earth, Wind } from 'lucide-react';
+import { Hotel, Ship, TreePalm, Earth } from 'lucide-react';
 import FlightSearchForm from './FlightSearchForm';
 import HotelSearchForm from './HotelSearchForm';
 import QuickQuoteForm, { QuickQuoteKind } from './QuickQuoteForm';
 import QuoteRequestModal, { QuoteRequest } from './QuoteRequestModal';
-import { BusIcon, DomesticIcon, FlightIcon, HeliIcon, HotelIcon, InternationalIcon, LuxuryIcon, TrainIcon } from './TabIcons';
+import { DomesticIcon, HotelIcon, InternationalIcon, LuxuryIcon } from './TabIcons';
 
 export type BookingTab = 'flight' | 'hotel' | QuickQuoteKind;
 
 type IconC = React.ComponentType<{ className?: string }>;
 
 const TABS: { key: BookingTab; label: string; Icon: IconC; MobileIcon: IconC; color: string }[] = [
-  { key: 'flight', label: 'Flight', Icon: FlightIcon, MobileIcon: Plane, color: 'bg-brand-blue' },
   { key: 'hotel', label: 'Hotel', Icon: HotelIcon, MobileIcon: Hotel, color: 'bg-brand-orange' },
-  { key: 'bus', label: 'Bus', Icon: BusIcon, MobileIcon: Bus, color: 'bg-brand-green' },
   { key: 'domestic', label: 'Domestic Holidays', Icon: DomesticIcon, MobileIcon: TreePalm, color: 'bg-brand-blue' },
-  { key: 'heli', label: 'Heli Ride', Icon: HeliIcon, MobileIcon: Wind, color: 'bg-brand-orange' },
   { key: 'luxury', label: 'Luxury Holidays', Icon: LuxuryIcon, MobileIcon: Ship, color: 'bg-brand-green' },
   { key: 'international', label: 'International Holidays', Icon: InternationalIcon, MobileIcon: Earth, color: 'bg-brand-blue' },
-  { key: 'train', label: 'Train', Icon: TrainIcon, MobileIcon: TrainFront, color: 'bg-brand-orange' },
 ];
 
-export default function BookingWidget({ initialTab = 'flight', tabs }: { initialTab?: BookingTab; tabs?: BookingTab[] }) {
-  const [active, setActive] = useState<BookingTab>(initialTab);
-  const [request, setRequest] = useState<QuoteRequest | null>(null);
+export default function BookingWidget({ initialTab = 'hotel', tabs }: { initialTab?: BookingTab; tabs?: BookingTab[] }) {
   const visibleTabs = tabs ? TABS.filter((t) => tabs.includes(t.key)) : TABS;
+  // Flight / Bus / Heli Ride / Train tabs were removed: fall back to the first shown tab if asked for one of those
+  const [active, setActive] = useState<BookingTab>(
+    visibleTabs.some((t) => t.key === initialTab) ? initialTab : visibleTabs[0]?.key ?? 'hotel'
+  );
+  const [request, setRequest] = useState<QuoteRequest | null>(null);
 
   return (
     <div id="booking" className="relative">
