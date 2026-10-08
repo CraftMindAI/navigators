@@ -2,7 +2,7 @@
 
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 
 export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || '';
 
@@ -26,7 +26,7 @@ export const event = ({ action, category, label, value }: { action: string, cate
   }
 };
 
-export default function GoogleAnalytics() {
+function AnalyticsEvents() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -36,6 +36,10 @@ export default function GoogleAnalytics() {
     pageview(url);
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+export default function GoogleAnalytics() {
   if (!GA_MEASUREMENT_ID) return null;
 
   return (
@@ -58,6 +62,9 @@ export default function GoogleAnalytics() {
           `,
         }}
       />
+      <Suspense fallback={null}>
+        <AnalyticsEvents />
+      </Suspense>
     </>
   );
 }

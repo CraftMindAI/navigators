@@ -11,8 +11,9 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const { email, password, fullName, phone, role } = await req.json();
 
     if (!['admin', 'employee', 'user'].includes(role)) {
@@ -27,7 +28,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     if (password) updateData.password = password;
 
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
-      params.id,
+      id,
       updateData
     );
 
@@ -44,7 +45,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         phone: phone,
         role: role
       })
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (profileError) {
       return NextResponse.json({ error: profileError.message }, { status: 400 });
@@ -56,14 +57,15 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     // Delete from auth.users (this should cascade to profiles if foreign keys are setup correctly)
     // Even if it doesn't, we can manually delete the profile first.
     
-    await supabaseAdmin.from('profiles').delete().eq('id', params.id);
+    await supabaseAdmin.from('profiles').delete().eq('id', id);
     
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(params.id);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
