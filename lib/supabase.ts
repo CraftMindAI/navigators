@@ -14,6 +14,30 @@ export const supabase = (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes
 let inquiriesList: Inquiry[] = [];
 let subscribersList: string[] = [];
 
+const mapTourRow = (t: any): TourPackage => ({
+  id: t.id,
+  title: t.title,
+  slug: t.slug,
+  location: t.location,
+  category: t.category,
+  price: Number(t.price),
+  originalPrice: t.original_price ? Number(t.original_price) : undefined,
+  durationNights: t.duration_nights,
+  durationDays: t.duration_days,
+  rating: Number(t.rating),
+  reviewCount: t.review_count,
+  imageUrl: t.image_url,
+  highlights: t.highlights?.length ? t.highlights : t.destination?.highlights || [],
+  inclusions: t.inclusions?.length ? t.inclusions : t.destination?.inclusions || [],
+  ownHighlights: t.highlights || [],
+  ownInclusions: t.inclusions || [],
+  destinationId: t.destination_id,
+  exclusions: t.exclusions || [],
+  itinerary: t.itinerary || [],
+  isFeatured: t.is_featured,
+  isTrending: t.is_trending,
+});
+
 /**
  * Fetch all tour packages
  */
@@ -26,29 +50,7 @@ export async function getTours(): Promise<TourPackage[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        return data?.map((t: any) => ({
-          id: t.id,
-          title: t.title,
-          slug: t.slug,
-          location: t.location,
-          category: t.category,
-          price: Number(t.price),
-          originalPrice: t.original_price ? Number(t.original_price) : undefined,
-          durationNights: t.duration_nights,
-          durationDays: t.duration_days,
-          rating: Number(t.rating),
-          reviewCount: t.review_count,
-          imageUrl: t.image_url,
-          highlights: t.highlights?.length ? t.highlights : t.destination?.highlights || [],
-          inclusions: t.inclusions?.length ? t.inclusions : t.destination?.inclusions || [],
-          ownHighlights: t.highlights || [],
-          ownInclusions: t.inclusions || [],
-          destinationId: t.destination_id,
-          exclusions: t.exclusions || [],
-          itinerary: t.itinerary || [],
-          isFeatured: t.is_featured,
-          isTrending: t.is_trending,
-        }));
+        return data.map(mapTourRow);
       }
     } catch (err) {
       console.warn('Supabase fetch failed, utilizing fallback dataset:', err);
@@ -57,6 +59,18 @@ export async function getTours(): Promise<TourPackage[]> {
 
   return [];
 }
+
+const mapDestinationRow = (d: any): Destination => ({
+  id: d.id,
+  name: d.name,
+  slug: d.slug,
+  category: d.category,
+  imageUrl: d.image_url,
+  packageCount: d.package_count,
+  description: d.description,
+  highlights: d.highlights || [],
+  inclusions: d.inclusions || [],
+});
 
 /**
  * Fetch all destinations
@@ -70,17 +84,7 @@ export async function getDestinations(): Promise<Destination[]> {
         .order('name', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        return data?.map((d: any) => ({
-          id: d.id,
-          name: d.name,
-          slug: d.slug,
-          category: d.category,
-          imageUrl: d.image_url,
-          packageCount: d.package_count,
-          description: d.description,
-          highlights: d.highlights || [],
-          inclusions: d.inclusions || [],
-        }));
+        return data.map(mapDestinationRow);
       }
     } catch (err) {
       console.warn('Supabase fetch destinations failed, utilizing fallback dataset:', err);
@@ -249,7 +253,11 @@ export async function submitInquiry(inquiry: Inquiry): Promise<{ success: boolea
 /** Inquiry title that marks a "Call Me Now" request; the admin lists these in their own tab. */
 export const CALLBACK_REQUEST_TITLE = 'Call-back request';
 
-export const isCallbackRequest = (inquiry: Inquiry) => inquiry.tourTitle === CALLBACK_REQUEST_TITLE;
+/** Admin inquiry pages: regular leads, or "Call Me Now" call-back requests. */
+export type InquiryKind = 'leads' | 'callbacks';
+export type InquiryStatus = NonNullable<Inquiry['status']>;
+export type InquiryStatusFilter = InquiryStatus | 'all';
+export const INQUIRY_STATUSES: InquiryStatus[] = ['pending', 'contacted', 'confirmed', 'cancelled'];
 
 /**
  * Submit a "Call Me Now" request (phone only). `source` says which form it came from.
@@ -288,38 +296,110 @@ export async function submitContact(contact: { name: string, email: string, phon
   return { success: true, message: 'Message sent successfully (Local fallback)!' };
 }
 
+/** Inquiry columns the admin search box matches against. */
+const INQUIRY_SEARCH_COLUMNS = ['name', 'email', 'phone', 'tour_title', 'message'];
+
+/** Strip characters that would break PostgREST's or() filter syntax. */
+const cleanSearch = (search?: string) => (search || '').replace(/[,()*"\\]/g, ' ').trim();
+
+export const INQUIRIES_PAGE_SIZE = 20;
+
 /**
- * Admin: Fetch all inquiries
+ * Admin: Fetch one page of inquiries (leads or call-backs). Status and search
+ * (name / email / phone / package / message) are applied in the database across all rows,
+ * then only that page's rows are returned, along with the total number of matches.
  */
-export async function getAllInquiries(): Promise<Inquiry[]> {
+export async function getInquiries(
+  kind: InquiryKind,
+  status: InquiryStatusFilter = 'all',
+  search?: string,
+  page = 1,
+  pageSize = INQUIRIES_PAGE_SIZE
+): Promise<{ rows: Inquiry[]; total: number }> {
   if (supabase) {
     try {
-      const { data, error } = await supabase
-        .from('inquiries')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let query = supabase.from('inquiries').select('*', { count: 'exact' });
+      query =
+        kind === 'callbacks'
+          ? query.eq('tour_title', CALLBACK_REQUEST_TITLE)
+          : query.or(`tour_title.is.null,tour_title.neq."${CALLBACK_REQUEST_TITLE}"`);
+      if (status !== 'all') query = query.eq('status', status);
+      const term = cleanSearch(search);
+      if (term) query = query.or(INQUIRY_SEARCH_COLUMNS.map((col) => `${col}.ilike."*${term}*"`).join(','));
 
-      if (!error && data) {
-        return data?.map((i: any) => ({
-          id: i.id,
-          name: i.name,
-          email: i.email,
-          phone: i.phone,
-          tourId: i.tour_id,
-          tourTitle: i.tour_title,
-          travelDate: i.travel_date,
-          guestsCount: i.guests_count,
-          message: i.message,
-          status: i.status,
-          createdAt: i.created_at,
-        }));
-      }
+      const from = (page - 1) * pageSize;
+      const { data, error, count } = await query
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true }) // stable order so rows don't shift between pages
+        .range(from, from + pageSize - 1);
+      // PGRST103: page is past the last row (e.g. after deleting the last item on a page)
+      if (error?.code === 'PGRST103') return { rows: [], total: 0 };
+      if (error) throw error;
+
+      const rows: Inquiry[] = (data || []).map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        email: i.email,
+        phone: i.phone,
+        tourId: i.tour_id,
+        tourTitle: i.tour_title,
+        travelDate: i.travel_date,
+        guestsCount: i.guests_count,
+        message: i.message,
+        status: i.status,
+        createdAt: i.created_at,
+      }));
+      return { rows, total: count ?? rows.length };
     } catch (err) {
-      console.warn('Supabase fetch inquiries failed');
+      console.warn('Supabase fetch inquiries failed', err);
     }
   }
 
-  return inquiriesList;
+  return { rows: [], total: 0 };
+}
+
+export type InquiryCounts = Record<InquiryKind, Record<InquiryStatusFilter, number>>;
+
+const emptyCounts = (): Record<InquiryStatusFilter, number> => ({ all: 0, pending: 0, contacted: 0, confirmed: 0, cancelled: 0 });
+
+/**
+ * Admin: Number of inquiries per page and status (matching the search term), counted in the database
+ */
+export async function getInquiryCounts(search?: string): Promise<InquiryCounts> {
+  const counts: InquiryCounts = { leads: emptyCounts(), callbacks: emptyCounts() };
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('inquiry_status_counts', { search: cleanSearch(search) || null });
+      if (error) throw error;
+      for (const row of (data || []) as { kind: InquiryKind; status: InquiryStatus; total: number }[]) {
+        const bucket = counts[row.kind];
+        if (!bucket) continue;
+        bucket[row.status] = (bucket[row.status] || 0) + Number(row.total);
+        bucket.all += Number(row.total);
+      }
+    } catch (err) {
+      console.warn('Supabase inquiry counts failed', err);
+    }
+  }
+  return counts;
+}
+
+/**
+ * Admin: Change a lead's status (pending / contacted / confirmed / cancelled)
+ */
+export async function updateInquiryStatus(id: string, status: InquiryStatus): Promise<{ success: boolean; message: string }> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.rpc('set_inquiry_status', { inquiry_id: id, new_status: status });
+      if (error) throw error;
+      if (!data) return { success: false, message: 'Lead not found.' };
+      return { success: true, message: `Status updated to ${status}.` };
+    } catch (err: any) {
+      console.error('Supabase status update failed:', err);
+      return { success: false, message: `DB Error: ${err.message}` };
+    }
+  }
+  return { success: false, message: 'Supabase not configured' };
 }
 
 /**
@@ -416,6 +496,16 @@ export async function createBlog(blog: Blog): Promise<{ success: boolean; messag
   return { success: true, message: 'Blog post published successfully! (Local)' };
 }
 
+const mapBlogRow = (b: any): Blog => ({
+  id: b.id,
+  title: b.title,
+  slug: b.slug,
+  image_url: b.image_url,
+  content: b.content,
+  author: b.author,
+  created_at: b.created_at,
+});
+
 /**
  * Fetch all blogs
  */
@@ -428,15 +518,7 @@ export async function getBlogs(): Promise<Blog[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return data?.map((b: any) => ({
-          id: b.id,
-          title: b.title,
-          slug: b.slug,
-          image_url: b.image_url,
-          content: b.content,
-          author: b.author,
-          created_at: b.created_at,
-        }));
+        return data.map(mapBlogRow);
       }
     } catch (err) {
       console.warn('Supabase fetch blogs failed');
@@ -558,6 +640,24 @@ export function sortHotels(hotels: Hotel[]): Hotel[] {
   );
 }
 
+const mapHotelRow = (h: any): Hotel => ({
+  id: h.id,
+  name: h.name,
+  slug: h.slug,
+  location: h.city,
+  category: h.category,
+  region: h.region || (h.category === 'international' ? 'international' : 'north'),
+  starRating: h.star_rating,
+  pricePerNight: Number(h.price_per_night),
+  originalPrice: h.original_price ? Number(h.original_price) : undefined,
+  imageUrl: h.image_url,
+  description: h.description || '',
+  amenities: h.amenities || [],
+  destinationId: h.destination_id,
+  isFeatured: h.is_featured,
+  createdAt: h.created_at,
+});
+
 /**
  * Fetch all hotels, in display order (see sortHotels)
  */
@@ -570,23 +670,7 @@ export async function getHotels(): Promise<Hotel[]> {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        return sortHotels(data?.map((h: any) => ({
-          id: h.id,
-          name: h.name,
-          slug: h.slug,
-          location: h.city,
-          category: h.category,
-          region: h.region || (h.category === 'international' ? 'international' : 'north'),
-          starRating: h.star_rating,
-          pricePerNight: Number(h.price_per_night),
-          originalPrice: h.original_price ? Number(h.original_price) : undefined,
-          imageUrl: h.image_url,
-          description: h.description || '',
-          amenities: h.amenities || [],
-          destinationId: h.destination_id,
-          isFeatured: h.is_featured,
-          createdAt: h.created_at,
-        })));
+        return sortHotels(data.map(mapHotelRow));
       }
     } catch (err) {
       console.warn('Supabase fetch hotels failed');
@@ -715,4 +799,104 @@ export async function saveHotelItinerary(hotelId: string, days: HotelItineraryDa
     }
   }
   return { success: false, message: 'Supabase not configured' };
+}
+
+/* ------------------------------------------------------------------ */
+/* Admin content lists: server-side filter, search and pagination      */
+/* ------------------------------------------------------------------ */
+
+export type AdminListTable = 'tours' | 'destinations' | 'hotels' | 'blogs';
+type AdminListRow = { tours: TourPackage; destinations: Destination; hotels: Hotel; blogs: Blog };
+
+export const ADMIN_PAGE_SIZE = 20;
+
+const ADMIN_LISTS: Record<
+  AdminListTable,
+  { select: string; search: string[]; filterColumn: string | null; order: [string, boolean][]; map: (row: any) => any }
+> = {
+  tours: {
+    select: '*, destination:destinations(highlights, inclusions)',
+    search: ['title', 'location'],
+    filterColumn: 'category',
+    order: [['created_at', false]],
+    map: mapTourRow,
+  },
+  destinations: { select: '*', search: ['name'], filterColumn: 'category', order: [['name', true]], map: mapDestinationRow },
+  // region_rank: North India -> South India -> International (generated column)
+  hotels: {
+    select: '*',
+    search: ['name', 'city'],
+    filterColumn: 'region',
+    order: [['region_rank', true], ['is_featured', false], ['created_at', false]],
+    map: mapHotelRow,
+  },
+  blogs: { select: '*', search: ['title', 'author'], filterColumn: null, order: [['created_at', false]], map: mapBlogRow },
+};
+
+/** Apply the admin filter value and search term to a query on one of the content tables. */
+function applyAdminListFilters(query: any, table: AdminListTable, filter: string, search?: string) {
+  const config = ADMIN_LISTS[table];
+  if (config.filterColumn && filter !== 'all') query = query.eq(config.filterColumn, filter);
+  const term = cleanSearch(search);
+  if (term) query = query.or(config.search.map((col) => `${col}.ilike."*${term}*"`).join(','));
+  return query;
+}
+
+/**
+ * Admin: One page of tours / places / hotels / blogs. Filter and search run in the database across
+ * all rows; only the requested page is returned, with the total number of matches.
+ */
+export async function getAdminList<K extends AdminListTable>(
+  table: K,
+  { filter = 'all', search, page = 1, pageSize = ADMIN_PAGE_SIZE }: { filter?: string; search?: string; page?: number; pageSize?: number } = {}
+): Promise<{ rows: AdminListRow[K][]; total: number }> {
+  if (supabase) {
+    try {
+      const config = ADMIN_LISTS[table];
+      let query = applyAdminListFilters(supabase.from(table).select(config.select, { count: 'exact' }), table, filter, search);
+      for (const [column, ascending] of config.order) query = query.order(column, { ascending });
+      const from = (page - 1) * pageSize;
+      // id as a final tie-breaker keeps rows from shifting between pages
+      const { data, error, count } = await query.order('id', { ascending: true }).range(from, from + pageSize - 1);
+      // PGRST103: page is past the last row (e.g. after deleting the last item on a page)
+      if (error?.code === 'PGRST103') return { rows: [], total: 0 };
+      if (error) throw error;
+      const rows = (data || []).map(config.map) as AdminListRow[K][];
+      return { rows, total: count ?? rows.length };
+    } catch (err) {
+      console.warn(`Supabase admin list (${table}) failed`, err);
+    }
+  }
+  return { rows: [], total: 0 };
+}
+
+/**
+ * Admin: Count of rows matching the search for 'all' and for each filter value (e.g. domestic /
+ * international), counted in the database.
+ */
+export async function getAdminListCounts(table: AdminListTable, filterValues: string[], search?: string): Promise<Record<string, number>> {
+  const counts: Record<string, number> = { all: 0 };
+  if (!supabase) return counts;
+  const client = supabase;
+  const keys = ['all', ...filterValues];
+  const results = await Promise.all(
+    keys.map((key) =>
+      applyAdminListFilters(client.from(table).select('id', { count: 'exact', head: true }), table, key, search).then(
+        ({ count }: { count: number | null }) => count ?? 0
+      )
+    )
+  );
+  keys.forEach((key, i) => (counts[key] = results[i]));
+  return counts;
+}
+
+/** Admin: Total rows in each content table (sidebar badges). */
+export async function getAdminTotals(): Promise<Record<AdminListTable, number>> {
+  const tables: AdminListTable[] = ['tours', 'destinations', 'hotels', 'blogs'];
+  const totals = { tours: 0, destinations: 0, hotels: 0, blogs: 0 };
+  if (!supabase) return totals;
+  const client = supabase;
+  const results = await Promise.all(tables.map((t) => client.from(t).select('id', { count: 'exact', head: true })));
+  tables.forEach((t, i) => (totals[t] = results[i].count ?? 0));
+  return totals;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { BedDouble, Headphones, Hotel as HotelIcon, IndianRupee, MapPin, ShieldCheck, Star } from 'lucide-react';
@@ -8,6 +8,7 @@ import { getHotels } from '@/lib/supabase';
 import { HOTEL_REGIONS, type Hotel } from '@/types';
 import { POPULAR_HOTEL_CITIES } from '@/data/travelContent';
 import SectionTitle from '@/components/SectionTitle';
+import FilterSidebar, { StarLabel, emptyFilters, passesGroup, passesPrice, type FilterValues } from '@/components/FilterSidebar';
 import type { HeroSlide } from '@/components/HeroBanner';
 import type { QuoteRequest } from '@/components/booking/QuoteRequestModal';
 
@@ -86,11 +87,40 @@ function HotelCard({ hotel }: { hotel: Hotel }) {
 export default function HotelsPage() {
   const [quote, setQuote] = useState<QuoteRequest | null>(null);
   const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [filters, setFilters] = useState<FilterValues>(emptyFilters);
 
   useEffect(() => {
     // getHotels already returns North India -> South India -> International
     getHotels().then(setHotels);
   }, []);
+
+  // Filter options come from the hotels on the site
+  const priceRange = useMemo(() => {
+    const prices = hotels.map((h) => h.pricePerNight).filter((p) => p > 0);
+    return prices.length ? { min: Math.min(...prices), max: Math.max(...prices), suffix: '/night' } : undefined;
+  }, [hotels]);
+
+  const filterGroups = useMemo(() => {
+    const stars = [...new Set(hotels.map((h) => h.starRating))].filter((n) => n >= 1 && n <= 5).sort((a, b) => b - a);
+    const amenities = [...new Set(hotels.flatMap((h) => h.amenities))].sort((a, b) => a.localeCompare(b));
+    return [
+      { id: 'stars', title: 'Star Rating', options: stars.map((n) => ({ value: String(n), label: <StarLabel count={n} /> })) },
+      {
+        id: 'region',
+        title: 'Region',
+        options: HOTEL_REGIONS.filter((r) => hotels.some((h) => h.region === r.value)).map((r) => ({ value: r.value, label: r.label })),
+      },
+      { id: 'amenities', title: 'Amenities', options: amenities.map((a) => ({ value: a, label: a })) },
+    ];
+  }, [hotels]);
+
+  const visibleHotels = hotels.filter(
+    (h) =>
+      passesPrice(filters, h.pricePerNight) &&
+      passesGroup(filters, 'stars', String(h.starRating)) &&
+      passesGroup(filters, 'region', h.region) &&
+      passesGroup(filters, 'amenities', h.amenities)
+  );
 
   return (
     <div className="bg-white">
@@ -122,23 +152,42 @@ export default function HotelsPage() {
         <section className="py-12">
           <div className="container-bb">
             <SectionTitle light="Our" bold="Hotels & Resorts" />
-            <div className="space-y-10">
-              {HOTEL_REGIONS?.map((region) => {
-                const regionHotels = hotels.filter((h) => h.region === region.value);
-                if (regionHotels.length === 0) return null;
-                return (
-                  <div key={region.value}>
-                    <h3 className="inline-block text-[19px] text-brand-ink pr-6 pb-1 mb-5 border-b-2 border-brand-green">
-                      {region.label} Hotels
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[30px]">
-                      {regionHotels?.map((h) => (
-                        <HotelCard key={h.id} hotel={h} />
-                      ))}
-                    </div>
+            <div className="flex flex-col lg:flex-row lg:items-start gap-[30px]">
+              <FilterSidebar
+                price={priceRange}
+                groups={filterGroups}
+                value={filters}
+                onChange={setFilters}
+                resultCount={visibleHotels.length}
+              />
+
+              <div className="flex-1 min-w-0 space-y-10">
+                {visibleHotels.length === 0 ? (
+                  <div className="bg-white border border-[#ddd] p-10 text-center">
+                    <p className="text-sm text-brand-ink mb-3">No hotels match these filters.</p>
+                    <button type="button" onClick={() => setFilters(emptyFilters())} className="text-sm text-brand-blue hover:underline">
+                      Reset all filters
+                    </button>
                   </div>
-                );
-              })}
+                ) : (
+                  HOTEL_REGIONS?.map((region) => {
+                    const regionHotels = visibleHotels.filter((h) => h.region === region.value);
+                    if (regionHotels.length === 0) return null;
+                    return (
+                      <div key={region.value}>
+                        <h3 className="inline-block text-[19px] text-brand-ink pr-6 pb-1 mb-5 border-b-2 border-brand-green">
+                          {region.label} Hotels
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-[30px]">
+                          {regionHotels?.map((h) => (
+                            <HotelCard key={h.id} hotel={h} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
         </section>
