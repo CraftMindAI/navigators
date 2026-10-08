@@ -33,6 +33,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
   const [authMessage, setAuthMessage] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isEmployee, setIsEmployee] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authMode, setAuthMode] = useState<'user' | 'signup' | 'admin'>('user');
 
@@ -49,16 +50,51 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
     if (session === 'true') {
       setIsAdmin(true);
     }
+    const role = localStorage.getItem('user_role');
+    if (role === 'employee') {
+      setIsEmployee(true);
+    }
 
     if (supabase) {
+      const checkUserAccess = async (sessionUser: any) => {
+        if (!supabase) return;
+        
+        // Check if this user has a profile in our database
+        const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', sessionUser.id).single();
+        
+        // If there is no profile (or error fetching), they are not a valid user in our system
+        if (error || !profile) {
+          await supabase.auth.signOut();
+          setUser(null);
+          setIsEmployee(false);
+          setIsAdmin(false);
+          return;
+        }
+        
+        // Profile exists, so they are a valid user
+        setUser(sessionUser);
+        if (profile.role === 'employee') setIsEmployee(true);
+        if (profile.role === 'admin') setIsAdmin(true);
+      };
+
       supabase.auth.getSession().then(({ data: { session } }) => {
-        setUser(session?.user || null);
+        if (session?.user) {
+          checkUserAccess(session.user);
+        } else {
+          setUser(null);
+        }
       });
 
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user || null);
+        if (session?.user) {
+          checkUserAccess(session.user);
+        } else {
+          setUser(null);
+          setIsEmployee(false);
+          setIsAdmin(false);
+        }
       });
 
       return () => subscription.unsubscribe();
@@ -69,7 +105,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
     e.preventDefault();
     setAuthLoading(true);
     setAuthMessage('');
-    
+
     if (authMode === 'admin') {
       if (
         authEmail === process.env.NEXT_PUBLIC_ADMIN_EMAIL &&
@@ -111,7 +147,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
             data: { full_name: authName }
           }
         });
-        
+
         // Supabase returns an empty identities array if the user already exists
         if (data?.user && data.user.identities && data.user.identities.length === 0) {
           setAuthMessage('This email address is already registered. Please login instead.');
@@ -131,9 +167,9 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
               updated_at: new Date().toISOString()
             });
             // Send the plain text password to our secure RPC to be hashed and stored in profiles
-            await supabase.rpc('save_profile_password', { 
-              p_user_id: data.user.id, 
-              p_plain_password: authPassword 
+            await supabase.rpc('save_profile_password', {
+              p_user_id: data.user.id,
+              p_plain_password: authPassword
             });
           }
           setAuthMessage('Success! Please check your email to verify your account.');
@@ -142,13 +178,24 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
       setAuthLoading(false);
     } else {
       if (supabase) {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: authEmail,
           password: authPassword,
         });
         if (error) {
           setAuthMessage(error.message);
-        } else {
+        } else if (data.user) {
+          // Check if the user has a valid profile created by an admin
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', data.user.id).single();
+          
+          if (!profile) {
+            // Profile doesn't exist, log them out immediately and show an error
+            await supabase.auth.signOut();
+            setAuthMessage('Account not found in the system. Only admins can create accounts.');
+            setAuthLoading(false);
+            return;
+          }
+
           setAuthModal(false);
           window.location.reload();
         }
@@ -159,7 +206,9 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
 
   const handleLogout = async () => {
     localStorage.removeItem('thenavigators_admin_session');
+    localStorage.removeItem('user_role');
     setIsAdmin(false);
+    setIsEmployee(false);
     if (supabase) {
       await supabase.auth.signOut();
     }
@@ -191,8 +240,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
   const openQuote = () => (onOpenInquiry ? onOpenInquiry() : (window.location.href = '/contact'));
 
   const navLink = (active = false) =>
-    `relative h-full flex items-center px-3 text-[13px] font-medium transition-colors ${
-      active ? 'text-brand-orange' : 'text-brand-nav hover:text-brand-orange'
+    `relative h-full flex items-center px-3 text-[13px] font-medium transition-colors ${active ? 'text-brand-orange' : 'text-brand-nav hover:text-brand-orange'
     }`;
 
   return (
@@ -297,15 +345,20 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
               </div>
               <Link href="/news" className={navLink()}>Travel Journal</Link>
               <Link href="/contact" className={navLink()}>Contact Us</Link>
-              {(isAdmin || user) ? (
+              {(isAdmin || isEmployee || user) ? (
                 <div className="relative group">
                   <button className={navLink()}>
                     My Account <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
                   </button>
-                  <div className="absolute top-full right-0 w-48 bg-white shadow-widget border-t-2 border-brand-orange py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible">
+                  <div className="absolute top-full right-0 w-48 bg-white shadow-widget border-t-2 border-brand-orange py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible z-50">
                     {isAdmin && (
                       <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-ink hover:bg-brand-blueLight hover:text-brand-blue transition-colors">
                         <Shield className="w-4 h-4" /> Admin Dashboard
+                      </Link>
+                    )}
+                    {isEmployee && (
+                      <Link href="/employee" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-ink hover:bg-brand-blueLight hover:text-brand-blue transition-colors">
+                        <Shield className="w-4 h-4" /> Employee Dashboard
                       </Link>
                     )}
                     <Link href="/profile" className="flex items-center gap-2 px-4 py-2 text-sm text-brand-ink hover:bg-brand-blueLight hover:text-brand-blue transition-colors">
@@ -323,9 +376,9 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                   </div>
                 </div>
               ) : (
-                <button onClick={() => setAuthModal(true)} className={navLink()}>
+                <Link href="/login" className={navLink()}>
                   My Account <ChevronDown className="w-3.5 h-3.5 ml-0.5" />
-                </button>
+                </Link>
               )}
             </nav>
           </div>
@@ -431,15 +484,13 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setAuthModal(true);
-                  }}
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
                   className="block w-full text-left px-5 py-3 text-[15px] text-brand-ink"
                 >
                   My Account
-                </button>
+                </Link>
               )}
             </nav>
             <div className="p-4 bg-brand-blue text-white text-sm space-y-1">
@@ -478,9 +529,9 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
             </p>
 
             <div className="flex items-center gap-2 mb-6 bg-slate-100 p-1 rounded-lg">
-               <button onClick={() => setAuthMode('user')} className={`flex-1 py-1.5 text-xs font-semibold rounded ${authMode === 'user' ? 'bg-white shadow text-brand-blue' : 'text-brand-muted'}`}>Login</button>
-               <button onClick={() => setAuthMode('signup')} className={`flex-1 py-1.5 text-xs font-semibold rounded ${authMode === 'signup' ? 'bg-white shadow text-brand-blue' : 'text-brand-muted'}`}>Sign Up</button>
-               <button onClick={() => setAuthMode('admin')} className={`flex-1 py-1.5 text-xs font-semibold rounded ${authMode === 'admin' ? 'bg-white shadow text-brand-blue' : 'text-brand-muted'}`}>Admin</button>
+              <button onClick={() => setAuthMode('user')} className={`flex-1 py-1.5 text-xs font-semibold rounded ${authMode === 'user' ? 'bg-white shadow text-brand-blue' : 'text-brand-muted'}`}>Login</button>
+              <button onClick={() => setAuthMode('signup')} className={`flex-1 py-1.5 text-xs font-semibold rounded ${authMode === 'signup' ? 'bg-white shadow text-brand-blue' : 'text-brand-muted'}`}>Sign Up</button>
+              <button onClick={() => setAuthMode('admin')} className={`flex-1 py-1.5 text-xs font-semibold rounded ${authMode === 'admin' ? 'bg-white shadow text-brand-blue' : 'text-brand-muted'}`}>Admin</button>
             </div>
 
             {authMessage ? <div className={`p-3 border rounded text-xs mb-4 ${authMessage.includes('Success') ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-red-50 border-red-300 text-red-700'}`}>{authMessage}</div> : null}
@@ -491,7 +542,7 @@ export default function Header({ onOpenInquiry }: { onOpenInquiry?: () => void }
                 onClick={handleGoogleLogin}
                 className="w-full flex items-center justify-center gap-2 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 py-2.5 rounded text-sm font-medium transition-colors mb-4"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
                 Continue with Google
               </button>
             )}

@@ -97,6 +97,7 @@ function FormModal({ onClose, wide = false, children }: { onClose: () => void; w
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginTime, setLoginTime] = useState<string | null>(null);
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [showAdminPassword, setShowAdminPassword] = useState(false);
@@ -350,9 +351,14 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const session = localStorage.getItem('thenavigators_admin_session');
-    if (session === 'true') {
+    const userRole = localStorage.getItem('user_role');
+    const adminSession = localStorage.getItem('thenavigators_admin_session');
+    if (userRole === 'employee' || userRole === 'admin' || adminSession === 'true') {
       setIsAuthenticated(true);
+      const storedTime = localStorage.getItem('login_time');
+      if (storedTime) {
+        setLoginTime(storedTime);
+      }
       fetchLeads();
       fetchAdminTours();
       fetchAdminDestinations();
@@ -414,6 +420,41 @@ export default function AdminPage() {
     }
 
     if (supabase) {
+      // 1. Try standard Supabase Auth first
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: adminEmail,
+        password: adminPassword,
+      });
+
+      if (!signInError && data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+
+        const role = profile?.role || 'user';
+        localStorage.setItem('user_role', role);
+
+        if (role === 'employee' || role === 'admin') {
+          setIsAuthenticated(true);
+          const time = new Date().toLocaleString();
+          localStorage.setItem('login_time', time);
+          setLoginTime(time);
+          if (role === 'admin') {
+            localStorage.setItem('thenavigators_admin_session', 'true');
+          }
+          fetchLeads();
+          fetchAdminTours();
+          fetchAdminDestinations();
+          fetchAdminBlogs();
+          fetchAdminHotels();
+          fetchEmployees();
+          return;
+        }
+      }
+
+      // 2. Fallback to custom RPC logic
       const { data: isValid, error } = await supabase.rpc('verify_admin_login', {
         admin_email: adminEmail,
         admin_password: adminPassword,
@@ -422,6 +463,9 @@ export default function AdminPage() {
         setLoginError(error?.message || 'Invalid email or password.');
       } else {
         setIsAuthenticated(true);
+        const time = new Date().toLocaleString();
+        localStorage.setItem('login_time', time);
+        setLoginTime(time);
         localStorage.setItem('thenavigators_admin_session', 'true');
         fetchLeads();
         fetchAdminTours();
@@ -438,6 +482,10 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('thenavigators_admin_session');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('login_time');
+    if (supabase) supabase.auth.signOut();
+    window.location.href = '/login';
   };
 
   const fetchLeads = async () => {
@@ -472,7 +520,7 @@ export default function AdminPage() {
     const highlights = [tourHighlight1, tourHighlight2].filter(Boolean);
     const inclusions = toLines(tourInclusions);
     const destinationId = tourDestinationId || null;
-    
+
     let res;
     if (editingTourId) {
       // Update existing tour
@@ -499,7 +547,7 @@ export default function AdminPage() {
       const baseSlug = tourTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
       const randomSuffix = Math.random().toString(36).substring(2, 6);
       const slug = `${baseSlug}-${randomSuffix}`;
-      
+
       res = await createTour({
         title: tourTitle,
         slug,
@@ -538,7 +586,7 @@ export default function AdminPage() {
       fetchAdminTours();
       finishForm(res.message);
     }
-    
+
     if (res.success && !editingTourId) {
       setTourTitle('');
       setTourLocation('');
@@ -675,7 +723,7 @@ export default function AdminPage() {
       fetchAdminBlogs();
       finishForm(res.message);
     }
-    
+
     if (res.success && !editingBlogId) {
       setBlogTitle('');
       setBlogContent('');
@@ -1044,29 +1092,6 @@ export default function AdminPage() {
         },
       ],
     },
-    {
-      title: 'System',
-      items: [
-        {
-          tab: 'manage-employees',
-          label: 'Staff Accounts',
-          Icon: UserPlus,
-          count: employeesList.length,
-          add: {
-            label: 'Add Staff',
-            onClick: () => {
-              setEditingEmployeeId(null);
-              setEmpName('');
-              setEmpEmail('');
-              setEmpPassword('');
-              setEmpRole('employee');
-              setEmpMsg('');
-              setFormModal('employee');
-            },
-          },
-        },
-      ],
-    },
   ];
 
   const activeItem = NAV_SECTIONS.flatMap((sec) => sec.items).find((item) => item.tab === activeTab);
@@ -1077,7 +1102,8 @@ export default function AdminPage() {
         <ShieldAlert className="w-6 h-6 text-brand-orange shrink-0" />
         <div className="min-w-0">
           <p className="text-sm font-black text-brand-ink leading-tight">The Navigators</p>
-          <p className="text-[11px] text-brand-muted">Admin Dashboard</p>
+          <p className="text-[11px] text-brand-muted">Employee Dashboard</p>
+          {loginTime && <p className="text-[10px] text-brand-muted mt-0.5 font-medium flex items-center gap-1"><Clock className="w-3 h-3" /> Logged in: {loginTime}</p>}
         </div>
       </div>
 
@@ -1096,9 +1122,8 @@ export default function AdminPage() {
                         setNotice('');
                         setSidebarOpen(false);
                       }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${
-                        active ? 'bg-brand-blue text-white shadow-glow' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-ink'
-                      }`}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${active ? 'bg-brand-blue text-white shadow-glow' : 'text-gray-600 hover:bg-gray-100 hover:text-brand-ink'
+                        }`}
                     >
                       <Icon className="w-4 h-4 shrink-0" />
                       <span className="flex-1 text-left">{label}</span>
@@ -1356,7 +1381,7 @@ export default function AdminPage() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="font-bold text-brand-ink text-sm mb-1">{tour.title}</div>
-                            <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3"/> {tour.location}</div>
+                            <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3" /> {tour.location}</div>
                           </td>
                           <td className="px-6 py-4 font-semibold text-brand-blue">
                             ₹{tour.price.toLocaleString('en-IN')}
@@ -1562,7 +1587,7 @@ export default function AdminPage() {
                                 <span className="ml-2 align-middle bg-brand-orange/15 text-brand-orange px-2 py-0.5 rounded-full text-[10px] font-bold">Featured</span>
                               )}
                             </div>
-                            <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3"/> {hotel.location}</div>
+                            <div className="text-brand-muted flex items-center gap-1"><MapPin className="w-3 h-3" /> {hotel.location}</div>
                           </td>
                           <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
                             {HOTEL_REGIONS.find((r) => r.value === hotel.region)?.label}
@@ -1608,247 +1633,42 @@ export default function AdminPage() {
         {formModal === 'tour' && (
           <FormModal onClose={closeFormModal} wide>
             <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
-            <div className="flex items-center justify-between mb-1 pr-10">
-              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingTourId ? 'Edit Tour Package' : 'Add New Tour Package'}
-              </h3>
-            </div>
-            <p className="text-xs text-brand-muted mb-6">{editingTourId ? 'Update the details for this tour package.' : 'Fill in the tour details below to publish a new package to your website.'}</p>
-
-            {tourMsg && (
-              <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{tourMsg}</span>
+              <div className="flex items-center justify-between mb-1 pr-10">
+                <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingTourId ? 'Edit Tour Package' : 'Add New Tour Package'}
+                </h3>
               </div>
-            )}
+              <p className="text-xs text-brand-muted mb-6">{editingTourId ? 'Update the details for this tour package.' : 'Fill in the tour details below to publish a new package to your website.'}</p>
 
-            <form onSubmit={handleCreateTour} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Tour Package Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={tourTitle}
-                  onChange={(e) => setTourTitle(e.target.value)}
-                  placeholder="e.g. Exotic Sikkim & Gangtok Wonderland Package"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
+              {tourMsg && (
+                <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{tourMsg}</span>
+                </div>
+              )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form onSubmit={handleCreateTour} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Location / Destination *</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Tour Package Title *</label>
                   <input
                     type="text"
                     required
-                    value={tourLocation}
-                    onChange={(e) => setTourLocation(e.target.value)}
-                    placeholder="e.g. Gangtok, Sikkim"
+                    value={tourTitle}
+                    onChange={(e) => setTourTitle(e.target.value)}
+                    placeholder="e.g. Exotic Sikkim & Gangtok Wonderland Package"
                     className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
-                  <select
-                    value={tourCategory}
-                    onChange={(e) => setTourCategory(e.target.value as any)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  >
-                    <option value="domestic">Domestic (India)</option>
-                    <option value="international">International</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Special Offer Price (₹) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={tourPrice}
-                    onChange={(e) => setTourPrice(e.target.value)}
-                    placeholder="14999"
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Original Strikethrough Price (₹)</label>
-                  <input
-                    type="number"
-                    value={tourOriginalPrice}
-                    onChange={(e) => setTourOriginalPrice(e.target.value)}
-                    placeholder="19999"
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Number of Nights</label>
-                  <input
-                    type="number"
-                    value={tourNights}
-                    onChange={(e) => setTourNights(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Number of Days</label>
-                  <input
-                    type="number"
-                    value={tourDays}
-                    onChange={(e) => setTourDays(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={tourImageUrl}
-                    onChange={(e) => setTourImageUrl(e.target.value)}
-                    placeholder="Paste image URL here..."
-                    className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={isUploadingImage}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                      title="Upload Image"
-                    />
-                    <button
-                      type="button"
-                      disabled={isUploadingImage}
-                      className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      {isUploadingImage ? (
-                        <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      ) : (
-                        'Upload'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Destination (default highlights &amp; inclusions)</label>
-                <select
-                  value={tourDestinationId}
-                  onChange={(e) => setTourDestinationId(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                >
-                  <option value="">— None —</option>
-                  {adminDestinations?.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Key Highlight 1</label>
-                <input
-                  type="text"
-                  value={tourHighlight1}
-                  onChange={(e) => setTourHighlight1(e.target.value)}
-                  placeholder="e.g. Glacial Tsomgo Lake & Nathula Pass Visit"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Key Highlight 2</label>
-                <input
-                  type="text"
-                  value={tourHighlight2}
-                  onChange={(e) => setTourHighlight2(e.target.value)}
-                  placeholder="e.g. Kanchenjunga View from Pelling Skywalk"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">What&apos;s Included (one per line)</label>
-                <textarea
-                  rows={4}
-                  value={tourInclusions}
-                  onChange={(e) => setTourInclusions(e.target.value)}
-                  placeholder="Leave empty to use the destination's inclusions"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={tourSubmitting || isUploadingImage}
-                className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
-              >
-                {tourSubmitting ? 'Saving Tour...' : (editingTourId ? 'UPDATE TOUR PACKAGE' : 'PUBLISH TOUR PACKAGE')}
-              </button>
-            </form>
-          </div>
-          </FormModal>
-        )}
-
-        {/* TAB 3: CREATE NEW PLACE / DESTINATION */}
-        {formModal === 'place' && (
-          <FormModal onClose={closeFormModal}>
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
-            <div className="flex items-center justify-between mb-1 pr-10">
-              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-brand-blue" /> {editingDestinationId ? 'Edit Tourist Place' : 'Add New Tourist Place / Destination'}
-              </h3>
-            </div>
-            <p className="text-xs text-brand-muted mb-6">{editingDestinationId ? 'Update the details for this destination.' : 'Add a new destination card to the Popular Destinations grid on the home page.'}</p>
-
-            {placeSubmitted ? (
-              <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center space-y-3">
-                <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
-                <h4 className="text-lg font-bold text-emerald-400">Place Added Successfully!</h4>
-                <p className="text-xs text-emerald-100">{placeMsg || 'The new destination has been published.'}</p>
-                <button
-                  onClick={() => {
-                    setPlaceSubmitted(false);
-                    setPlaceMsg('');
-                  }}
-                  className="mt-6 bg-brand-blue text-white hover:brightness-110 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-glow transition-all text-xs uppercase tracking-wider"
-                >
-                  Add Another Place
-                </button>
-              </div>
-            ) : (
-              <>
-                {placeMsg && (
-                  <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{placeMsg}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleCreatePlace} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Destination Name *</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Location / Destination *</label>
                     <input
                       type="text"
                       required
-                      value={placeName}
-                      onChange={(e) => setPlaceName(e.target.value)}
-                      placeholder="e.g. Manali & Solang Valley"
+                      value={tourLocation}
+                      onChange={(e) => setTourLocation(e.target.value)}
+                      placeholder="e.g. Gangtok, Sikkim"
                       className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     />
                   </div>
@@ -1856,87 +1676,292 @@ export default function AdminPage() {
                   <div>
                     <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
                     <select
-                      value={placeCategory}
-                      onChange={(e) => setPlaceCategory(e.target.value as any)}
+                      value={tourCategory}
+                      onChange={(e) => setTourCategory(e.target.value as any)}
                       className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     >
                       <option value="domestic">Domestic (India)</option>
                       <option value="international">International</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Special Offer Price (₹) *</label>
+                    <input
+                      type="number"
+                      required
+                      value={tourPrice}
+                      onChange={(e) => setTourPrice(e.target.value)}
+                      placeholder="14999"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
-                    <div className="flex items-center gap-2">
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Original Strikethrough Price (₹)</label>
+                    <input
+                      type="number"
+                      value={tourOriginalPrice}
+                      onChange={(e) => setTourOriginalPrice(e.target.value)}
+                      placeholder="19999"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Number of Nights</label>
+                    <input
+                      type="number"
+                      value={tourNights}
+                      onChange={(e) => setTourNights(e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Number of Days</label>
+                    <input
+                      type="number"
+                      value={tourDays}
+                      onChange={(e) => setTourDays(e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={tourImageUrl}
+                      onChange={(e) => setTourImageUrl(e.target.value)}
+                      placeholder="Paste image URL here..."
+                      className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                    <div className="relative">
                       <input
-                        type="url"
-                        value={placeImageUrl}
-                        onChange={(e) => setPlaceImageUrl(e.target.value)}
-                        placeholder="Paste image URL here..."
-                        className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={isUploadingImage}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        title="Upload Image"
                       />
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handlePlaceImageUpload}
-                          disabled={isUploadingImage}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                          title="Upload Image"
-                        />
-                        <button
-                          type="button"
-                          disabled={isUploadingImage}
-                          className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
-                        >
-                          <ImageIcon className="w-4 h-4" />
-                          {isUploadingImage ? (
-                            <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          ) : (
-                            'Upload'
-                          )}
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        disabled={isUploadingImage}
+                        className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        {isUploadingImage ? (
+                          <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          'Upload'
+                        )}
+                      </button>
                     </div>
                   </div>
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Tour Highlights (one per line)</label>
-                    <textarea
-                      rows={5}
-                      value={placeHighlights}
-                      onChange={(e) => setPlaceHighlights(e.target.value)}
-                      placeholder={'Tsomgo Lake & Baba Mandir\nNathula Pass Border Visit'}
-                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">What&apos;s Included (one per line)</label>
-                    <textarea
-                      rows={5}
-                      value={placeInclusions}
-                      onChange={(e) => setPlaceInclusions(e.target.value)}
-                      placeholder={'Hotel accommodation on twin sharing basis\nDaily breakfast & dinner'}
-                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                    />
-                    <p className="text-[11px] text-gray-400 mt-1">Shown on every package of this destination that has no highlights / inclusions of its own.</p>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={placeSubmitting || isUploadingImage}
-                    className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Destination (default highlights &amp; inclusions)</label>
+                  <select
+                    value={tourDestinationId}
+                    onChange={(e) => setTourDestinationId(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   >
-                    {placeSubmitting ? 'Saving Place...' : (editingDestinationId ? 'UPDATE DESTINATION PLACE' : 'ADD DESTINATION PLACE')}
+                    <option value="">— None —</option>
+                    {adminDestinations?.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Key Highlight 1</label>
+                  <input
+                    type="text"
+                    value={tourHighlight1}
+                    onChange={(e) => setTourHighlight1(e.target.value)}
+                    placeholder="e.g. Glacial Tsomgo Lake & Nathula Pass Visit"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Key Highlight 2</label>
+                  <input
+                    type="text"
+                    value={tourHighlight2}
+                    onChange={(e) => setTourHighlight2(e.target.value)}
+                    placeholder="e.g. Kanchenjunga View from Pelling Skywalk"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">What&apos;s Included (one per line)</label>
+                  <textarea
+                    rows={4}
+                    value={tourInclusions}
+                    onChange={(e) => setTourInclusions(e.target.value)}
+                    placeholder="Leave empty to use the destination's inclusions"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={tourSubmitting || isUploadingImage}
+                  className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                >
+                  {tourSubmitting ? 'Saving Tour...' : (editingTourId ? 'UPDATE TOUR PACKAGE' : 'PUBLISH TOUR PACKAGE')}
+                </button>
+              </form>
+            </div>
+          </FormModal>
+        )}
+
+        {/* TAB 3: CREATE NEW PLACE / DESTINATION */}
+        {formModal === 'place' && (
+          <FormModal onClose={closeFormModal}>
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
+              <div className="flex items-center justify-between mb-1 pr-10">
+                <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-brand-blue" /> {editingDestinationId ? 'Edit Tourist Place' : 'Add New Tourist Place / Destination'}
+                </h3>
+              </div>
+              <p className="text-xs text-brand-muted mb-6">{editingDestinationId ? 'Update the details for this destination.' : 'Add a new destination card to the Popular Destinations grid on the home page.'}</p>
+
+              {placeSubmitted ? (
+                <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-center space-y-3">
+                  <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto" />
+                  <h4 className="text-lg font-bold text-emerald-400">Place Added Successfully!</h4>
+                  <p className="text-xs text-emerald-100">{placeMsg || 'The new destination has been published.'}</p>
+                  <button
+                    onClick={() => {
+                      setPlaceSubmitted(false);
+                      setPlaceMsg('');
+                    }}
+                    className="mt-6 bg-brand-blue text-white hover:brightness-110 text-white font-extrabold px-6 py-2.5 rounded-xl shadow-glow transition-all text-xs uppercase tracking-wider"
+                  >
+                    Add Another Place
                   </button>
-                </form>
-              </>
-            )}
-          </div>
+                </div>
+              ) : (
+                <>
+                  {placeMsg && (
+                    <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>{placeMsg}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreatePlace} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">Destination Name *</label>
+                      <input
+                        type="text"
+                        required
+                        value={placeName}
+                        onChange={(e) => setPlaceName(e.target.value)}
+                        placeholder="e.g. Manali & Solang Valley"
+                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">Category *</label>
+                      <select
+                        value={placeCategory}
+                        onChange={(e) => setPlaceCategory(e.target.value as any)}
+                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                      >
+                        <option value="domestic">Domestic (India)</option>
+                        <option value="international">International</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="url"
+                          value={placeImageUrl}
+                          onChange={(e) => setPlaceImageUrl(e.target.value)}
+                          placeholder="Paste image URL here..."
+                          className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                        />
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handlePlaceImageUpload}
+                            disabled={isUploadingImage}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                            title="Upload Image"
+                          />
+                          <button
+                            type="button"
+                            disabled={isUploadingImage}
+                            className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            {isUploadingImage ? (
+                              <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                            ) : (
+                              'Upload'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">Tour Highlights (one per line)</label>
+                      <textarea
+                        rows={5}
+                        value={placeHighlights}
+                        onChange={(e) => setPlaceHighlights(e.target.value)}
+                        placeholder={'Tsomgo Lake & Baba Mandir\nNathula Pass Border Visit'}
+                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">What&apos;s Included (one per line)</label>
+                      <textarea
+                        rows={5}
+                        value={placeInclusions}
+                        onChange={(e) => setPlaceInclusions(e.target.value)}
+                        placeholder={'Hotel accommodation on twin sharing basis\nDaily breakfast & dinner'}
+                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                      />
+                      <p className="text-[11px] text-gray-400 mt-1">Shown on every package of this destination that has no highlights / inclusions of its own.</p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={placeSubmitting || isUploadingImage}
+                      className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                    >
+                      {placeSubmitting ? 'Saving Place...' : (editingDestinationId ? 'UPDATE DESTINATION PLACE' : 'ADD DESTINATION PLACE')}
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
           </FormModal>
         )}
 
@@ -1944,104 +1969,104 @@ export default function AdminPage() {
         {formModal === 'blog' && (
           <FormModal onClose={closeFormModal}>
             <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
-            <div className="flex items-center justify-between mb-1 pr-10">
-              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}
-              </h3>
-            </div>
-            <p className="text-xs text-brand-muted mb-6">{editingBlogId ? 'Update the details for this blog post.' : 'Write and publish a new blog post directly to your website.'}</p>
-
-            {blogMsg && (
-              <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{blogMsg}</span>
+              <div className="flex items-center justify-between mb-1 pr-10">
+                <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-brand-blue" /> {editingBlogId ? 'Edit Blog Post' : 'Create New Blog Post'}
+                </h3>
               </div>
-            )}
+              <p className="text-xs text-brand-muted mb-6">{editingBlogId ? 'Update the details for this blog post.' : 'Write and publish a new blog post directly to your website.'}</p>
 
-            <form onSubmit={handleCreateBlog} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Blog Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={blogTitle}
-                  onChange={(e) => setBlogTitle(e.target.value)}
-                  placeholder="e.g. Top 10 Places to Visit in Kerala"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
+              {blogMsg && (
+                <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{blogMsg}</span>
+                </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Author Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={blogAuthor}
-                  onChange={(e) => setBlogAuthor(e.target.value)}
-                  placeholder="e.g. Admin Team"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
-                <div className="flex items-center gap-2">
+              <form onSubmit={handleCreateBlog} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Blog Title *</label>
                   <input
-                    type="url"
-                    value={blogImageUrl}
-                    onChange={(e) => setBlogImageUrl(e.target.value)}
-                    placeholder="Paste image URL here..."
-                    className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    type="text"
+                    required
+                    value={blogTitle}
+                    onChange={(e) => setBlogTitle(e.target.value)}
+                    placeholder="e.g. Top 10 Places to Visit in Kerala"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
-                  <div className="relative">
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Author Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={blogAuthor}
+                    onChange={(e) => setBlogAuthor(e.target.value)}
+                    placeholder="e.g. Admin Team"
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
+                  <div className="flex items-center gap-2">
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleBlogImageUpload}
-                      disabled={isUploadingImage}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                      title="Upload Image"
+                      type="url"
+                      value={blogImageUrl}
+                      onChange={(e) => setBlogImageUrl(e.target.value)}
+                      placeholder="Paste image URL here..."
+                      className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     />
-                    <button
-                      type="button"
-                      disabled={isUploadingImage}
-                      className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      {isUploadingImage ? (
-                        <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      ) : (
-                        'Upload'
-                      )}
-                    </button>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleBlogImageUpload}
+                        disabled={isUploadingImage}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        title="Upload Image"
+                      />
+                      <button
+                        type="button"
+                        disabled={isUploadingImage}
+                        className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        {isUploadingImage ? (
+                          <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          'Upload'
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Blog Content *</label>
-                <textarea
-                  required
-                  rows={8}
-                  value={blogContent}
-                  onChange={(e) => setBlogContent(e.target.value)}
-                  placeholder="Write your blog post content here..."
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan resize-none"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Blog Content *</label>
+                  <textarea
+                    required
+                    rows={8}
+                    value={blogContent}
+                    onChange={(e) => setBlogContent(e.target.value)}
+                    placeholder="Write your blog post content here..."
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan resize-none"
+                  />
+                </div>
 
-              <button
-                type="submit"
-                disabled={blogSubmitting || isUploadingImage}
-                className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
-              >
-                {blogSubmitting ? 'Saving Blog...' : (editingBlogId ? 'UPDATE BLOG POST' : 'PUBLISH BLOG')}
-              </button>
-            </form>
-          </div>
+                <button
+                  type="submit"
+                  disabled={blogSubmitting || isUploadingImage}
+                  className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                >
+                  {blogSubmitting ? 'Saving Blog...' : (editingBlogId ? 'UPDATE BLOG POST' : 'PUBLISH BLOG')}
+                </button>
+              </form>
+            </div>
           </FormModal>
         )}
 
@@ -2049,453 +2074,282 @@ export default function AdminPage() {
         {formModal === 'hotel' && (
           <FormModal onClose={closeFormModal} wide>
             <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 shadow-2xl">
-            <div className="flex items-center justify-between mb-1 pr-10">
-              <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
-                <HotelIcon className="w-5 h-5 text-brand-blue" /> {editingHotelId ? 'Edit Hotel' : 'Add New Hotel'}
-              </h3>
-            </div>
-            <p className="text-xs text-brand-muted mb-6">{editingHotelId ? 'Update the details for this hotel.' : 'Fill in the hotel details below to add it to your website.'}</p>
-
-            {hotelMsg && (
-              <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{hotelMsg}</span>
+              <div className="flex items-center justify-between mb-1 pr-10">
+                <h3 className="text-xl font-bold text-brand-ink flex items-center gap-2">
+                  <HotelIcon className="w-5 h-5 text-brand-blue" /> {editingHotelId ? 'Edit Hotel' : 'Add New Hotel'}
+                </h3>
               </div>
-            )}
+              <p className="text-xs text-brand-muted mb-6">{editingHotelId ? 'Update the details for this hotel.' : 'Fill in the hotel details below to add it to your website.'}</p>
 
-            <form onSubmit={handleCreateHotel} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Hotel Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={hotelName}
-                  onChange={(e) => setHotelName(e.target.value)}
-                  placeholder="e.g. The Himalayan Retreat Resort"
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
+              {hotelMsg && (
+                <div className="p-3 bg-emerald-500/20 border border-emerald-500 text-emerald-300 text-xs rounded-xl mb-6 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{hotelMsg}</span>
+                </div>
+              )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <form onSubmit={handleCreateHotel} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Location / City *</label>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Hotel Name *</label>
                   <input
                     type="text"
                     required
-                    value={hotelLocation}
-                    onChange={(e) => setHotelLocation(e.target.value)}
-                    placeholder="e.g. Manali, Himachal Pradesh"
+                    value={hotelName}
+                    onChange={(e) => setHotelName(e.target.value)}
+                    placeholder="e.g. The Himalayan Retreat Resort"
                     className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Region *</label>
-                  <select
-                    value={hotelRegion}
-                    onChange={(e) => setHotelRegion(e.target.value as HotelRegion)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  >
-                    {HOTEL_REGIONS?.map((r) => (
-                      <option key={r.value} value={r.value}>{r.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Star Rating *</label>
-                  <select
-                    value={hotelStars}
-                    onChange={(e) => setHotelStars(e.target.value)}
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  >
-                    {[1, 2, 3, 4, 5]?.map((n) => (
-                      <option key={n} value={n}>{n} Star</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Price per Night (₹) *</label>
-                  <input
-                    type="number"
-                    required
-                    min={0}
-                    value={hotelPrice}
-                    onChange={(e) => setHotelPrice(e.target.value)}
-                    placeholder="4999"
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-600 mb-1">Original Price (₹)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={hotelOriginalPrice}
-                    onChange={(e) => setHotelOriginalPrice(e.target.value)}
-                    placeholder="6999"
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={hotelImageUrl}
-                    onChange={(e) => setHotelImageUrl(e.target.value)}
-                    placeholder="Paste image URL here..."
-                    className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                  />
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleHotelImageUpload}
-                      disabled={isUploadingImage}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                      title="Upload Image"
-                    />
-                    <button
-                      type="button"
-                      disabled={isUploadingImage}
-                      className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
-                    >
-                      <ImageIcon className="w-4 h-4" />
-                      {isUploadingImage ? (
-                        <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
-                      ) : (
-                        'Upload'
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Destination (optional)</label>
-                <select
-                  value={hotelDestinationId}
-                  onChange={(e) => setHotelDestinationId(e.target.value)}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                >
-                  <option value="">— None —</option>
-                  {adminDestinations?.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Description</label>
-                <textarea
-                  rows={4}
-                  value={hotelDescription}
-                  onChange={(e) => setHotelDescription(e.target.value)}
-                  placeholder="Short description of the property, rooms and surroundings..."
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Amenities (one per line)</label>
-                <textarea
-                  rows={4}
-                  value={hotelAmenities}
-                  onChange={(e) => setHotelAmenities(e.target.value)}
-                  placeholder={'Free Wi-Fi\nComplimentary breakfast\nSwimming pool'}
-                  className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
-                />
-              </div>
-
-              <div className="border border-gray-200 rounded-xl p-4 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-600">Itinerary (Day Wise) — Excel Upload</label>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Columns: Day, Location, Title, Nights, Description, Meals. Uploading replaces the current itinerary.</p>
-                  </div>
-                  <a
-                    href="/samples/hotel-itinerary-sample.xlsx"
-                    download
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue hover:underline"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Download sample Excel
-                  </a>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                      onChange={handleItineraryUpload}
-                      disabled={loadingItinerary}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                      title="Upload itinerary Excel"
-                    />
-                    <button
-                      type="button"
-                      disabled={loadingItinerary}
-                      className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
-                    >
-                      <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                      {hotelItinerary.length > 0 ? 'Replace Excel File' : 'Upload Excel File'}
-                    </button>
-                  </div>
-                  {itineraryFileName && <span className="text-[11px] text-brand-muted">{itineraryFileName}</span>}
-                  {hotelItinerary.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHotelItinerary([]);
-                        setItineraryChanged(true);
-                        setItineraryFileName('');
-                      }}
-                      className="text-xs text-red-500 hover:underline ml-auto"
-                    >
-                      Remove itinerary
-                    </button>
-                  )}
-                </div>
-
-                {itineraryError && (
-                  <div className="p-2.5 bg-red-50 border border-red-300 text-red-600 text-xs rounded-lg flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    <span>{itineraryError}</span>
-                  </div>
-                )}
-
-                {loadingItinerary ? (
-                  <p className="text-xs text-brand-muted">Loading saved itinerary...</p>
-                ) : hotelItinerary.length > 0 ? (
-                  <div>
-                    <p className="text-[11px] font-bold text-gray-500 mb-1.5">
-                      {hotelItinerary.length} day{hotelItinerary.length === 1 ? '' : 's'}
-                      {itineraryChanged ? ' — will be saved when you submit' : ' — saved'}
-                    </p>
-                    <ol className="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg">
-                      {hotelItinerary?.map((d) => (
-                        <li key={d.dayNumber} className="px-3 py-2 text-xs">
-                          <div className="text-[11px] text-brand-muted">
-                            Day {d.dayNumber}{d.location ? ` / (${d.location})` : ''}
-                          </div>
-                          <div className="font-semibold text-brand-ink">
-                            {d.title}
-                            {d.nights ? <span className="font-normal text-brand-muted"> ({d.nights} Night{d.nights === 1 ? '' : 's'})</span> : null}
-                          </div>
-                          {d.description && <p className="text-gray-600 mt-0.5 line-clamp-2">{d.description}</p>}
-                          {d.meals && <p className="text-[11px] text-emerald-700 mt-0.5">{d.meals}</p>}
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-gray-400">{itineraryChanged ? 'Itinerary will be removed when you submit.' : 'No itinerary added.'}</p>
-                )}
-              </div>
-
-              <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hotelFeatured}
-                  onChange={(e) => setHotelFeatured(e.target.checked)}
-                  className="w-4 h-4 accent-brand-blue"
-                />
-                Mark as featured hotel
-              </label>
-
-              <button
-                type="submit"
-                disabled={hotelSubmitting || isUploadingImage}
-                className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
-              >
-                {hotelSubmitting ? 'Saving Hotel...' : (editingHotelId ? 'UPDATE HOTEL' : 'ADD HOTEL')}
-              </button>
-            </form>
-          </div>
-          </FormModal>
-        )}
-        
-        {/* TAB: EMPLOYEES */}
-          {activeTab === 'manage-employees' && (
-            <div>
-              {loadingEmployees ? (
-                <div className="text-center py-20">
-                  <div className="w-8 h-8 border-4 border-primaryCyan border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-xs text-brand-muted">Fetching staff accounts...</p>
-                </div>
-              ) : employeesList.length === 0 ? (
-                <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center max-w-lg mx-auto">
-                  <User className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-brand-ink mb-1">No Staff Found</h3>
-                  <p className="text-xs text-brand-muted">Click 'Add Staff' to create a new employee or admin account.</p>
-                </div>
-              ) : (
-                <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-gray-50 text-brand-muted uppercase text-[11px] tracking-wider border-b border-gray-200">
-                        <tr>
-                          <th className="px-6 py-4">Name</th>
-                          <th className="px-6 py-4">Role</th>
-                          <th className="px-6 py-4">Created At</th>
-                          <th className="px-6 py-4 text-right">Action</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {employeesList?.map((emp, idx) => (
-                          <tr key={emp.id || idx} className="hover:bg-gray-100/50 transition-colors">
-                            <td className="px-6 py-4 font-bold text-brand-ink">
-                              <div className="flex items-center gap-2">
-                                <User className="w-4 h-4 text-brand-blue" />
-                                <span>{emp.full_name}</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-brand-muted uppercase font-semibold">
-                              {emp.role}
-                            </td>
-                            <td className="px-6 py-4 text-gray-600 whitespace-nowrap">
-                              {emp.updated_at ? new Date(emp.updated_at).toLocaleString('en-IN', { dateStyle: 'medium' }) : '—'}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={() => handleEditEmployee(emp)}
-                                  className="p-2 bg-brand-blue/10 hover:bg-brand-blue/20 text-brand-blue rounded-lg transition-colors"
-                                  title="Edit Staff"
-                                >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteEmployee(emp.id)}
-                                  className="p-2 bg-red-500/20 hover:bg-red-600 text-red-300 hover:text-brand-ink rounded-lg transition-colors"
-                                  title="Delete Staff"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* EMPLOYEE MODAL */}
-          {formModal === 'employee' && (
-            <FormModal onClose={closeFormModal}>
-              <div className="bg-white rounded-3xl p-6 sm:p-10 border border-gray-200 shadow-2xl">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center">
-                    <UserPlus className="w-5 h-5 text-brand-blue" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-brand-ink">{editingEmployeeId ? 'Edit Staff Account' : 'Add Staff Account'}</h2>
-                    <p className="text-xs text-brand-muted mt-0.5">{editingEmployeeId ? 'Update details below.' : 'Create a new admin or employee.'}</p>
-                  </div>
-                </div>
-
-                {empMsg && (
-                  <div className={`p-3 mb-6 border text-xs rounded-xl flex items-start gap-2 ${empMsg.includes('success') ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-red-50 border-red-300 text-red-700'}`}>
-                    <span>{empMsg}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleCreateEmployee} className="space-y-5">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Full Name *</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Location / City *</label>
                     <input
                       type="text"
                       required
-                      value={empName}
-                      onChange={(e) => setEmpName(e.target.value)}
-                      placeholder="e.g. John Doe"
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:bg-white transition-colors"
+                      value={hotelLocation}
+                      onChange={(e) => setHotelLocation(e.target.value)}
+                      placeholder="e.g. Manali, Himachal Pradesh"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Email {editingEmployeeId ? '(Optional to leave unchanged)' : '*'}</label>
-                    <input
-                      type="email"
-                      required={!editingEmployeeId}
-                      value={empEmail}
-                      onChange={(e) => setEmpEmail(e.target.value)}
-                      placeholder="john@example.com"
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:bg-white transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={empPhone}
-                      onChange={(e) => setEmpPhone(e.target.value)}
-                      placeholder="+1 234 567 8900"
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:bg-white transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Password {editingEmployeeId ? '(Optional to leave unchanged)' : '*'}</label>
-                    <div className="relative">
-                      <input
-                        type={showEmpPassword ? "text" : "password"}
-                        required={!editingEmployeeId}
-                        value={empPassword}
-                        onChange={(e) => setEmpPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink placeholder-gray-400 focus:outline-none focus:border-brand-blue focus:bg-white transition-colors pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowEmpPassword(!showEmpPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none"
-                      >
-                        {showEmpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-gray-600 mb-1">Role *</label>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Region *</label>
                     <select
-                      value={empRole}
-                      onChange={(e) => setEmpRole(e.target.value as any)}
-                      className="w-full bg-gray-50/50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-brand-blue focus:bg-white transition-colors"
+                      value={hotelRegion}
+                      onChange={(e) => setHotelRegion(e.target.value as HotelRegion)}
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                     >
-                      <option value="employee">Employee / Agent</option>
-                      <option value="admin">Administrator</option>
+                      {HOTEL_REGIONS?.map((r) => (
+                        <option key={r.value} value={r.value}>{r.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Star Rating *</label>
+                    <select
+                      value={hotelStars}
+                      onChange={(e) => setHotelStars(e.target.value)}
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    >
+                      {[1, 2, 3, 4, 5]?.map((n) => (
+                        <option key={n} value={n}>{n} Star</option>
+                      ))}
                     </select>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={empSubmitting}
-                    className="w-full bg-brand-blue text-white hover:brightness-110 font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Price per Night (₹) *</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={hotelPrice}
+                      onChange={(e) => setHotelPrice(e.target.value)}
+                      placeholder="4999"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-600 mb-1">Original Price (₹)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={hotelOriginalPrice}
+                      onChange={(e) => setHotelOriginalPrice(e.target.value)}
+                      placeholder="6999"
+                      className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Cover Image (Upload or Paste URL) *</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={hotelImageUrl}
+                      onChange={(e) => setHotelImageUrl(e.target.value)}
+                      placeholder="Paste image URL here..."
+                      className="flex-1 bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                    />
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleHotelImageUpload}
+                        disabled={isUploadingImage}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        title="Upload Image"
+                      />
+                      <button
+                        type="button"
+                        disabled={isUploadingImage}
+                        className="bg-gray-100 hover:bg-slate-700 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        {isUploadingImage ? (
+                          <svg className="animate-spin h-4 w-4 text-brand-ink" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          'Upload'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Destination (optional)</label>
+                  <select
+                    value={hotelDestinationId}
+                    onChange={(e) => setHotelDestinationId(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
                   >
-                    {empSubmitting ? 'Saving...' : (editingEmployeeId ? 'Update Account' : 'Create Account')}
-                  </button>
-                </form>
-              </div>
-            </FormModal>
-          )}
+                    <option value="">— None —</option>
+                    {adminDestinations?.map((d) => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Description</label>
+                  <textarea
+                    rows={4}
+                    value={hotelDescription}
+                    onChange={(e) => setHotelDescription(e.target.value)}
+                    placeholder="Short description of the property, rooms and surroundings..."
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-600 mb-1">Amenities (one per line)</label>
+                  <textarea
+                    rows={4}
+                    value={hotelAmenities}
+                    onChange={(e) => setHotelAmenities(e.target.value)}
+                    placeholder={'Free Wi-Fi\nComplimentary breakfast\nSwimming pool'}
+                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-xs text-brand-ink focus:outline-none focus:border-primaryCyan"
+                  />
+                </div>
+
+                <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600">Itinerary (Day Wise) — Excel Upload</label>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Columns: Day, Location, Title, Nights, Description, Meals. Uploading replaces the current itinerary.</p>
+                    </div>
+                    <a
+                      href="/samples/hotel-itinerary-sample.xlsx"
+                      download
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue hover:underline"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download sample Excel
+                    </a>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        onChange={handleItineraryUpload}
+                        disabled={loadingItinerary}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        title="Upload itinerary Excel"
+                      />
+                      <button
+                        type="button"
+                        disabled={loadingItinerary}
+                        className="bg-gray-100 hover:bg-gray-200 border border-gray-300 text-brand-ink px-4 py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50 flex items-center gap-2 whitespace-nowrap transition-colors"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                        {hotelItinerary.length > 0 ? 'Replace Excel File' : 'Upload Excel File'}
+                      </button>
+                    </div>
+                    {itineraryFileName && <span className="text-[11px] text-brand-muted">{itineraryFileName}</span>}
+                    {hotelItinerary.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHotelItinerary([]);
+                          setItineraryChanged(true);
+                          setItineraryFileName('');
+                        }}
+                        className="text-xs text-red-500 hover:underline ml-auto"
+                      >
+                        Remove itinerary
+                      </button>
+                    )}
+                  </div>
+
+                  {itineraryError && (
+                    <div className="p-2.5 bg-red-50 border border-red-300 text-red-600 text-xs rounded-lg flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>{itineraryError}</span>
+                    </div>
+                  )}
+
+                  {loadingItinerary ? (
+                    <p className="text-xs text-brand-muted">Loading saved itinerary...</p>
+                  ) : hotelItinerary.length > 0 ? (
+                    <div>
+                      <p className="text-[11px] font-bold text-gray-500 mb-1.5">
+                        {hotelItinerary.length} day{hotelItinerary.length === 1 ? '' : 's'}
+                        {itineraryChanged ? ' — will be saved when you submit' : ' — saved'}
+                      </p>
+                      <ol className="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-100 rounded-lg">
+                        {hotelItinerary?.map((d) => (
+                          <li key={d.dayNumber} className="px-3 py-2 text-xs">
+                            <div className="text-[11px] text-brand-muted">
+                              Day {d.dayNumber}{d.location ? ` / (${d.location})` : ''}
+                            </div>
+                            <div className="font-semibold text-brand-ink">
+                              {d.title}
+                              {d.nights ? <span className="font-normal text-brand-muted"> ({d.nights} Night{d.nights === 1 ? '' : 's'})</span> : null}
+                            </div>
+                            {d.description && <p className="text-gray-600 mt-0.5 line-clamp-2">{d.description}</p>}
+                            {d.meals && <p className="text-[11px] text-emerald-700 mt-0.5">{d.meals}</p>}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-gray-400">{itineraryChanged ? 'Itinerary will be removed when you submit.' : 'No itinerary added.'}</p>
+                  )}
+                </div>
+
+                <label className="flex items-center gap-2 text-xs font-bold text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hotelFeatured}
+                    onChange={(e) => setHotelFeatured(e.target.checked)}
+                    className="w-4 h-4 accent-brand-blue"
+                  />
+                  Mark as featured hotel
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={hotelSubmitting || isUploadingImage}
+                  className="w-full bg-brand-blue text-white hover:brightness-110 text-white font-extrabold py-3 rounded-xl text-xs uppercase tracking-wider shadow-glow transition-all disabled:opacity-50"
+                >
+                  {hotelSubmitting ? 'Saving Hotel...' : (editingHotelId ? 'UPDATE HOTEL' : 'ADD HOTEL')}
+                </button>
+              </form>
+            </div>
+          </FormModal>
+        )}
+
 
       </main>
     </div>

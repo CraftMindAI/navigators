@@ -113,9 +113,11 @@ export interface Review {
 
 export interface UserProfile {
   id: string;
+  email?: string;
   full_name?: string;
   phone?: string;
   avatar_url?: string;
+  role?: 'admin' | 'employee' | 'user';
   updated_at?: string;
 }
 
