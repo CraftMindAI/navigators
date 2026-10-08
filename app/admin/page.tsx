@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { supabase, getInquiries, getInquiryCounts, INQUIRY_STATUSES, INQUIRIES_PAGE_SIZE, getAdminList, getAdminListCounts, getAdminTotals, ADMIN_PAGE_SIZE, createTour, updateTour, deleteTour, createDestination, getDestinations, updateDestination, deleteDestination, deleteInquiry, updateInquiryStatus, createBlog, updateBlog, deleteBlog, createHotel, updateHotel, deleteHotel, getHotelItinerary, saveHotelItinerary } from '@/lib/supabase';
 import type { AdminListTable, InquiryCounts, InquiryStatus, InquiryStatusFilter } from '@/lib/supabase';
 import { Inquiry, TourPackage, Destination, Blog, Hotel, HotelItineraryDay, HotelRegion, HOTEL_REGIONS } from '@/types';
-import { ShieldAlert, RefreshCw, Phone, Mail, Calendar, User, CheckCircle2, Clock, ArrowLeft, PlusCircle, Trash2, LogOut, MapPin, DollarSign, Sparkles, Image as ImageIcon, Hotel as HotelIcon, Star, FileSpreadsheet, Download, AlertTriangle, PhoneCall, Menu, X, BookOpen, type LucideIcon } from 'lucide-react';
+import { ShieldAlert, ChevronLeft, ChevronRight, Search, Eye, EyeOff, RefreshCw, Phone, Mail, Calendar, User, UserPlus, CheckCircle2, Clock, ArrowLeft, PlusCircle, Trash2, LogOut, MapPin, DollarSign, Sparkles, Image as ImageIcon, Hotel as HotelIcon, Star, FileSpreadsheet, Download, AlertTriangle, PhoneCall, Menu, X, BookOpen, type LucideIcon } from 'lucide-react';
 
 /** Excel header (lower-cased, spaces stripped) -> itinerary field. */
 const ITINERARY_COLUMNS: Record<string, keyof HotelItineraryDay> = {
@@ -281,6 +281,20 @@ export default function AdminPage() {
   const [formModal, setFormModal] = useState<'tour' | 'place' | 'hotel' | 'blog' | 'employee' | null>(null);
   const [notice, setNotice] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const contentRequestId = useRef(0);
+  const leadsRequestId = useRef(0);
+
+  // Lists State
+  const [listSearch, setListSearch] = useState('');
+  const [debouncedListSearch, setDebouncedListSearch] = useState('');
+  const [listFilter, setListFilter] = useState('all');
+  const [listPage, setListPage] = useState(1);
+  const [leadTotal, setLeadTotal] = useState(0);
+  const [inquiryCounts, setInquiryCounts] = useState<InquiryCounts | null>(null);
+  const [contentCounts, setContentCounts] = useState<Record<string, number>>({});
+  const [contentTotals, setContentTotals] = useState<Record<string, number> | null>(null);
+  const [content, setContent] = useState<{ table: AdminListTable; rows: any[]; total: number } | null>(null);
+  const [loadingContent, setLoadingContent] = useState(false);
 
   // Admin Tours State
   const [editingTourId, setEditingTourId] = useState<string | null>(null);
@@ -295,6 +309,19 @@ export default function AdminPage() {
 
   // Admin Hotels State
   const [editingHotelId, setEditingHotelId] = useState<string | null>(null);
+  
+  // Admin Employees State
+  const [editingEmployeeId, setEditingEmployeeId] = useState<string | null>(null);
+  const [empName, setEmpName] = useState('');
+  const [empEmail, setEmpEmail] = useState('');
+  const [empPhone, setEmpPhone] = useState('');
+  const [empPassword, setEmpPassword] = useState('');
+  const [showEmpPassword, setShowEmpPassword] = useState(false);
+  const [empRole, setEmpRole] = useState('employee');
+  const [empMsg, setEmpMsg] = useState('');
+  const [empSubmitting, setEmpSubmitting] = useState(false);
+  const [employeesList, setEmployeesList] = useState<any[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
   // Leads State
   // Inquiries for the open page (Lead Inquiries or Call Me Now), already filtered by status in the database
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);

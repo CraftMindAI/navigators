@@ -302,6 +302,38 @@ const INQUIRY_SEARCH_COLUMNS = ['name', 'email', 'phone', 'tour_title', 'message
 /** Strip characters that would break PostgREST's or() filter syntax. */
 const cleanSearch = (search?: string) => (search || '').replace(/[,()*"\\]/g, ' ').trim();
 
+export const isCallbackRequest = (inquiry: Inquiry) => !inquiry.tourId;
+
+export async function getAllInquiries(): Promise<Inquiry[]> {
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('inquiries')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        return data.map((i: any) => ({
+          id: i.id,
+          name: i.name,
+          email: i.email,
+          phone: i.phone,
+          tourId: i.tour_id,
+          tourTitle: i.tour_title,
+          travelDate: i.travel_date,
+          guestsCount: i.guests_count,
+          message: i.message,
+          status: i.status,
+          createdAt: i.created_at,
+        }));
+      }
+    } catch (err) {
+      console.warn('getAllInquiries error:', err);
+    }
+  }
+  return [];
+}
+
 export const INQUIRIES_PAGE_SIZE = 20;
 
 /**
