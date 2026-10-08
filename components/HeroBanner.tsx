@@ -57,7 +57,7 @@ const DEFAULT_SLIDES: HeroSlide[] = [
 
 export default function HeroBanner({
   slides = DEFAULT_SLIDES,
-  initialTab = 'flight',
+  initialTab = 'hotel',
   tabs,
 }: {
   slides?: HeroSlide[];
